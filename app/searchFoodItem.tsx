@@ -8,18 +8,20 @@ import {
   StyleSheet,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useMeals, Meal, Section } from "./context/MealsContext";
 import { usePlan } from "./context/PlanContext";
-import { Section, Meal } from "./context/MealsContext";
 
 export default function SearchFoodItem() {
-  const { section, date } = useLocalSearchParams<{
+  const { section, dateKey } = useLocalSearchParams<{
     section: Section;
-    date: string;
+    dateKey?: string;
   }>();
+  const { addFood } = useMeals();
   const { addPlanFood } = usePlan();
   const router = useRouter();
   const [query, setQuery] = useState("");
 
+  // dummy master list, sorted
   const allFoods: Meal[] = useMemo(
     () =>
       [
@@ -35,12 +37,21 @@ export default function SearchFoodItem() {
     []
   );
 
-  const filtered = allFoods.filter((f) =>
-    f.name.toLowerCase().includes(query.trim().toLowerCase())
+  // live filter
+  const results = useMemo(
+    () =>
+      allFoods.filter((f) =>
+        f.name.toLowerCase().includes(query.trim().toLowerCase())
+      ),
+    [allFoods, query]
   );
 
   const onAdd = (item: Meal) => {
-    addPlanFood(date!, section!, item);
+    if (dateKey) {
+      addPlanFood(dateKey, section, item);
+    } else {
+      addFood(section, item);
+    }
     router.back();
   };
 
@@ -53,10 +64,9 @@ export default function SearchFoodItem() {
         selectionColor="#007AFF"
         value={query}
         onChangeText={setQuery}
-        autoFocus
       />
       <FlatList
-        data={filtered}
+        data={results}
         keyExtractor={(_, i) => i.toString()}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.item} onPress={() => onAdd(item)}>

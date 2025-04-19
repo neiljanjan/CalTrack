@@ -15,7 +15,7 @@ import Header from "../components/Header";
 import AddFoodOptionsModal from "../components/AddFoodOptionsModal";
 import SettingsModal from "../components/SettingsModal";
 import NotificationsModal from "../components/NotificationsModal";
-import { useMeals, Section } from "../context/MealsContext";
+import { useMeals } from "../context/MealsContext";
 
 const screenHeight = Dimensions.get("window").height;
 const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snacks"] as const;
@@ -28,18 +28,17 @@ export default function HomePage() {
   const consumed = Object.values(mealsByType)
     .flat()
     .reduce((sum, m) => sum + m.calories, 0);
+
   const burned = 0;
   const net = consumed - burned;
   const goal = 2000;
   const displayValue = Math.min(consumed, goal);
 
-  const [section, setSection] = useState<Section>("Breakfast");
+  const [section, setSection] =
+    useState<(typeof mealTypes)[number]>("Breakfast");
   const [addVisible, setAddVisible] = useState(false);
   const [settingsVis, setSettingsVis] = useState(false);
   const [notifyVis, setNotifyVis] = useState(false);
-
-  // today’s key
-  const todayKey = new Date().toISOString().split("T")[0];
 
   return (
     <>
@@ -55,7 +54,7 @@ export default function HomePage() {
           onNotificationsPress={() => setNotifyVis(true)}
         />
 
-        {/* summary */}
+        {/* SUMMARY CIRCLE */}
         <View style={styles.summaryBox}>
           <View style={styles.circularWrapper}>
             <CircularProgress
@@ -98,7 +97,7 @@ export default function HomePage() {
           </View>
         </View>
 
-        {/* meal‐type toggle */}
+        {/* MEAL‐TYPE TOGGLE */}
         <View style={styles.toggleContainer}>
           {mealTypes.map((mt) => (
             <TouchableOpacity
@@ -121,7 +120,7 @@ export default function HomePage() {
           ))}
         </View>
 
-        {/* meal list + “+” */}
+        {/* MEAL LIST + ADD */}
         <View style={styles.mealsBox}>
           <Text style={styles.sectionTitle}>{section}</Text>
           {mealsByType[section].map((m, i) => (
@@ -155,7 +154,6 @@ export default function HomePage() {
         visible={addVisible}
         onClose={() => setAddVisible(false)}
         section={section}
-        dateKey={todayKey}
       />
       <SettingsModal
         visible={settingsVis}
@@ -170,7 +168,11 @@ export default function HomePage() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: "#fff", alignItems: "center", paddingVertical: 20 },
+  container: {
+    backgroundColor: "#fff",
+    alignItems: "center",
+    paddingVertical: 20,
+  },
   summaryBox: {
     width: "90%",
     backgroundColor: "#E0F7FA",
@@ -184,8 +186,12 @@ const styles = StyleSheet.create({
   circularWrapper: { position: "relative" },
   circularTextContainer: {
     position: "absolute",
-    top: 0, bottom: 0, left: 0, right: 0,
-    justifyContent: "center", alignItems: "center",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    justifyContent: "center",
+    alignItems: "center",
   },
   circularText: { fontSize: 20, fontWeight: "bold", color: "green" },
   circularSubText: { fontSize: 12, color: "green" },
@@ -194,39 +200,62 @@ const styles = StyleSheet.create({
   linearValue: { fontSize: 16, fontWeight: "bold" },
   linearLabel: { fontSize: 12, color: "#666" },
   progressBar: {
-    width: "100%", height: 6, backgroundColor: "#e0e0e0",
-    borderRadius: 3, overflow: "hidden",
+    width: "100%",
+    height: 6,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 3,
+    overflow: "hidden",
   },
   progressFill: { height: "100%", borderRadius: 3 },
   toggleContainer: { flexDirection: "row", width: "90%", marginBottom: 15 },
   toggleButton: {
-    flex: 1, paddingVertical: 6, marginHorizontal: 4,
-    borderRadius: 20, borderWidth: 1, borderColor: "#007AFF",
+    flex: 1,
+    paddingVertical: 6,
+    marginHorizontal: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#007AFF",
     alignItems: "center",
   },
   toggleButtonSelected: { backgroundColor: "#007AFF" },
   toggleText: { color: "#007AFF" },
   toggleTextSelected: { color: "#fff", fontWeight: "bold" },
   mealsBox: {
-    width: "90%", backgroundColor: "#F9F9F9",
-    borderRadius: 10, padding: 15, marginBottom: 20,
+    width: "90%",
+    backgroundColor: "#F9F9F9",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 20,
   },
   sectionTitle: { fontSize: 18, fontWeight: "600", marginBottom: 10 },
   mealItem: {
-    flexDirection: "row", alignItems: "center",
-    backgroundColor: "#fff", borderRadius: 8,
-    padding: 10, marginBottom: 8, width: "100%", elevation: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    width: "100%",
+    elevation: 2,
   },
   mealName: { fontSize: 16, fontWeight: "500" },
   mealDetails: { fontSize: 12, color: "#666" },
   addSection: {
-    backgroundColor: "#007AFF", borderRadius: 10,
-    paddingVertical: 8, alignItems: "center", marginTop: 8,
+    backgroundColor: "#007AFF",
+    borderRadius: 10,
+    paddingVertical: 8,
+    alignItems: "center",
+    marginTop: 8,
   },
   addButton: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: "#007AFF", borderWidth: 2, borderColor: "#fff",
-    justifyContent: "center", alignItems: "center",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#007AFF",
+    borderWidth: 2,
+    borderColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
   },
   addButtonText: { color: "#fff", fontSize: 24, lineHeight: 24 },
 });

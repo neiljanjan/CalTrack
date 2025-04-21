@@ -1,4 +1,3 @@
-// app/loginPage.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -6,11 +5,12 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from './context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginPage() {
   const { signIn } = useAuth();
@@ -20,7 +20,7 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     try {
-      await signIn(email, password);
+      await signIn(email.trim(), password);
       router.replace('/(tabs)/homePage');
     } catch (e: any) {
       Alert.alert('Login failed', e.message);
@@ -30,41 +30,99 @@ export default function LoginPage() {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>CalTracker</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        autoCapitalize="none"
-        onChangeText={setEmail}
-        value={email}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        secureTextEntry
-        onChangeText={setPassword}
-        value={password}
-      />
+
+      {/* Email Input */}
+      <View style={styles.inputContainer}>
+        <Ionicons name="mail-outline" size={20} color="#666" />
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#666"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          onChangeText={setEmail}
+          value={email}
+        />
+      </View>
+
+      {/* Password Input */}
+      <View style={styles.inputContainer}>
+        <Ionicons name="lock-closed-outline" size={20} color="#666" />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#666"
+          secureTextEntry
+          onChangeText={setPassword}
+          value={password}
+        />
+      </View>
+
+      {/* Login Button */}
       <TouchableOpacity onPress={handleLogin} style={styles.button}>
-        <Text style={styles.btnText}>Log In</Text>
+        <Text style={styles.buttonText}>Log In</Text>
       </TouchableOpacity>
+
+      {/* Sign Up Link */}
       <TouchableOpacity onPress={() => router.push('/signupPage')}>
-        <Text style={styles.link}>Don't have an account? Sign Up</Text>
+        <Text style={styles.linkText}>
+          Don't have an account? <Text style={styles.linkHighlight}>Sign Up</Text>
+        </Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex:1, justifyContent:'center', padding:20, backgroundColor:'#fff' },
-  title: { fontSize:32, fontWeight:'bold', textAlign:'center', marginBottom:40 },
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 24,
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#007AFF',
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    height: 48,
+  },
   input: {
-    borderWidth:1, borderColor:'#ccc', borderRadius:8,
-    padding:12, marginBottom:20
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#333',
   },
   button: {
-    backgroundColor:'#007AFF', padding:15,
-    borderRadius:8, marginBottom:20
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    paddingVertical: 14,
+    marginTop: 8,
+    marginBottom: 24,
   },
-  btnText: { color:'#fff', textAlign:'center', fontSize:16 },
-  link: { color:'#007AFF', textAlign:'center' },
+  buttonText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  linkText: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#666',
+  },
+  linkHighlight: {
+    color: '#007AFF',
+    fontWeight: '500',
+  },
 });

@@ -11,7 +11,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CircularProgress from "react-native-circular-progress-indicator";
 import Header from "../components/Header";
-import AddFoodOptionsModal from "../components/AddFoodOptionsModal";
+import AddFoodOptionsModal from "../components/AddFoodOptionsModal.tsx";
 
 // 👉 Import the plan context, not meals
 import { usePlan } from "../context/PlanContext";

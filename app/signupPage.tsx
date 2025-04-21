@@ -1,146 +1,88 @@
-import React from "react";
+// app/signupPage.tsx
+import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  TouchableOpacity,
   TextInput,
-} from "react-native";
-import { useNavigation, Link } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import Entypo from "@expo/vector-icons/Entypo";
+  TouchableOpacity,
+  StyleSheet,
+  Alert
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAuth } from './context/AuthContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const SignupPage = () => {
-    const navigation = useNavigation();
-    return (
-      <View className="flex-1 bg-white">
-        <SafeAreaView className="flex">
-          <View className="flex-row justify-start">
-            <TouchableOpacity
-              onPress={() => {
-                navigation.goBack();
-              }}
-              className="bg-blue-400 p-2 rounded-tr-2xl rounded-bl-2xl ml-4"
-            >
-              <AntDesign name="arrowleft" size={24} color="black" />
-            </TouchableOpacity>
-          </View>
-          <View className="flex-row justify-center">
-            <Text className="text-5xl text-blue-500 font-bold mt-20 mb-20">
-              CalTracker
-            </Text>
-          </View>
-        </SafeAreaView>
-  
-        <View className="flex-1 bg-white px-8 pt-8">
-          <View className="form space-y-2">
-            <View className="flex-row align-center">
-              <Entypo
-                name="email"
-                size={24}
-                color="black"
-                style={{ marginRight: 20, marginTop: 25 }}
-              />
-              <TextInput
-                style={{
-                  padding: 16,
-                  backgroundColor: "white",
-                  color: "gray",
-                  marginBottom: 30,
-                  borderBottomWidth: 2,
-                  borderBottomColor: "black",
-                  width: "85%",
-                }}
-                placeholder="Enter your email address"
-                value="Enter your email address"
-              />
-            </View>
+export default function SignupPage() {
+  const { signUp } = useAuth();
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
 
-            <View className="flex-row align-center">
-              <Entypo
-                name="user"
-                size={24}
-                color="black"
-                style={{ marginRight: 20, marginTop: 25 }}
-              />
-              <TextInput
-                style={{
-                  padding: 16,
-                  backgroundColor: "white",
-                  color: "gray",
-                  marginBottom: 30,
-                  borderBottomWidth: 2,
-                  borderBottomColor: "black",
-                  width: "85%",
-                }}
-                placeholder="Enter your name"
-                value="Enter your name"
-              />
-            </View>
-  
-            <View className="flex-row align-center">
-              <Entypo
-                name="lock"
-                size={24}
-                color="black"
-                style={{ marginRight: 20, marginTop: 25 }}
-              />
-              <TextInput
-                style={{
-                  padding: 16,
-                  backgroundColor: "white",
-                  color: "gray",
-                  marginBottom: 30,
-                  borderBottomWidth: 2,
-                  borderBottomColor: "black",
-                  width: "85%",
-                }}
-                placeholder="Enter your password"
-                value="Enter your password"
-              />
-            </View>
+  const handleSignUp = async () => {
+    if (password !== confirm) {
+      return Alert.alert('Error', 'Passwords do not match');
+    }
+    try {
+      await signUp(email, password, name);
+      router.replace('/(tabs)/homePage');
+    } catch (e: any) {
+      Alert.alert('Sign Up failed', e.message);
+    }
+  };
 
-            <View className="flex-row align-center">
-              <Entypo
-                name="lock"
-                size={24}
-                color="black"
-                style={{ marginRight: 20, marginTop: 25 }}
-              />
-              <TextInput
-                style={{
-                  padding: 16,
-                  backgroundColor: "white",
-                  color: "gray",
-                  marginBottom: 30,
-                  borderBottomWidth: 2,
-                  borderBottomColor: "black",
-                  width: "85%",
-                }}
-                placeholder="Confirm your password"
-                value="Confirm your password"
-              />
-            </View>
-  
-            <Link href="/onboarding/step1" className="py-3 bg-blue-500 rounded-xl">
-              <Text className="text-white text-center bg-blue-500 rounded-xl font-xl align-center justify-center flex">
-                Sign Up
-              </Text>
-            </Link>
-  
-            <View className="flex-row justify-center">
-              <Text className="text-center mt-10">
-                Joined us before?{" "}
-                <Link href="/loginPage" className="text-blue-500">
-                  Log in
-                </Link>
-              </Text>
-            </View>
-          </View>
-        </View>
-      </View>
-    );
-};
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>Create Account</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Name"
+        onChangeText={setName}
+        value={name}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        autoCapitalize="none"
+        onChangeText={setEmail}
+        value={email}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        secureTextEntry
+        onChangeText={setPassword}
+        value={password}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Confirm Password"
+        secureTextEntry
+        onChangeText={setConfirm}
+        value={confirm}
+      />
+      <TouchableOpacity onPress={handleSignUp} style={styles.button}>
+        <Text style={styles.btnText}>Sign Up</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push('/loginPage')}>
+        <Text style={styles.link}>Already have an account? Log In</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
+  );
+}
 
-export default SignupPage;
+const styles = StyleSheet.create({
+  container: { flex:1, justifyContent:'center', padding:20, backgroundColor:'#fff' },
+  title: { fontSize:28, fontWeight:'bold', textAlign:'center', marginBottom:30 },
+  input: {
+    borderWidth:1, borderColor:'#ccc', borderRadius:8,
+    padding:12, marginBottom:20
+  },
+  button: {
+    backgroundColor:'#007AFF', padding:15,
+    borderRadius:8, marginBottom:20
+  },
+  btnText: { color:'#fff', textAlign:'center', fontSize:16 },
+  link: { color:'#007AFF', textAlign:'center' },
+});

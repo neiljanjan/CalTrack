@@ -12,7 +12,7 @@ import CircularProgress from "react-native-circular-progress-indicator";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Header from "../components/Header";
-import AddFoodOptionsModal from "../components/AddFoodOptionsModal";
+import AddFoodOptionsModal from "../components/AddFoodOptionsModal.tsx";
 import SettingsModal from "../components/SettingsModal";
 import NotificationsModal from "../components/NotificationsModal";
 import { useMeals } from "../context/MealsContext";

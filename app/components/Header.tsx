@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
   onSettingsPress: () => void;
@@ -13,76 +14,64 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({
   onSettingsPress,
   onNotificationsPress,
-}) => (
-  <SafeAreaView style={styles.safeArea}>
-    <View style={styles.headerContainer}>
-      {/* Left Side: Profile picture link + welcome */}
-      <View style={styles.leftContainer}>
-        <Link href="/userprofile" asChild>
-          <TouchableOpacity
-            style={styles.profileContainer}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="person-circle" size={40} color="#007AFF" />
+}) => {
+  const { user } = useAuth();
+  const firstName = user?.displayName?.split(' ')[0] ?? 'User';
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {/* Left: user icon + name */}
+        <View style={styles.left}>
+          <Link href="/userprofile" asChild>
+            <TouchableOpacity style={styles.touchable}>
+              <Ionicons name="person-circle" size={50} color="#007AFF" />
+            </TouchableOpacity>
+          </Link>
+          <Text style={styles.name}>Hi, {firstName}</Text>
+        </View>
+
+        {/* Right: settings + notifications */}
+        <View style={styles.right}>
+          <TouchableOpacity onPress={onSettingsPress} style={styles.iconTouch}>
+            <Ionicons name="settings-outline" size={28} color="#007AFF" />
           </TouchableOpacity>
-        </Link>
-        <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>Welcome,</Text>
-          <Text style={styles.userName}>Placeholder Name</Text>
+          <TouchableOpacity onPress={onNotificationsPress} style={styles.iconTouch}>
+            <Ionicons name="notifications-outline" size={28} color="#007AFF" />
+          </TouchableOpacity>
         </View>
       </View>
-
-      {/* Right Side: Settings & Notifications */}
-      <View style={styles.rightContainer}>
-        <TouchableOpacity onPress={onSettingsPress} style={styles.iconButton}>
-          <Ionicons name="settings-outline" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onNotificationsPress} style={styles.iconButton}>
-          <Ionicons name="notifications-outline" size={28} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  </SafeAreaView>
-);
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: '#fff',
-  },
-  headerContainer: {
+  safeArea: { backgroundColor: '#fff' },
+  container: {
+    width: '90%',
+    alignSelf: 'center',
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,  // increased for more breathing room
+    alignItems: 'center',
     paddingVertical: 12,
-    marginTop: 20,
-    marginBottom: 20,
   },
-  leftContainer: {
+  left: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  profileContainer: {
-    marginRight: 12,   // bump out to avoid clipping
-    paddingHorizontal: 4,  // extra horizontal padding
+  touchable: {
+    marginRight: 8,
   },
-  welcomeContainer: {
-    marginRight: 50,
-  },
-  welcomeText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  name: {
+    fontSize: 20,
+    fontWeight: '600',
     color: '#333',
   },
-  rightContainer: {
+  right: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  iconButton: {
+  iconTouch: {
     marginLeft: 16,
   },
 });

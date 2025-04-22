@@ -1,14 +1,22 @@
-import { Text, View } from "react-native";
-import { Link } from "expo-router";
+// app/index.tsx
+import React, { useEffect } from 'react';
+import { useRouter } from 'expo-router';
+import { useAuth } from './context/AuthContext';
 
 export default function Index() {
-  return (
-    <View className="flex-1 items-center justify-center">
-      <Text className="text-5xl text-blue-500 
-      font-bold">CalTracker</Text>
-      <Link href="/loginPage" className="text-blue-500">Login</Link>
-      <Link href="/signupPage" className="text-blue-500">Sign Up</Link>
-      <Link href="/homePage" className="text-blue-500">Go To Home</Link>
-    </View>
-  );
+  const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user) {
+      // already signed in → go to your tabs
+      router.replace('/(tabs)/homePage');
+    } else {
+      // not signed in → go to login
+      router.replace('/loginPage');
+    }
+  }, [user]);
+
+  // you can return null because we're just redirecting
+  return null;
 }

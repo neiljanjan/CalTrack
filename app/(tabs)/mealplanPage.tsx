@@ -11,11 +11,11 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CircularProgress from "react-native-circular-progress-indicator";
 import Header from "../components/Header";
-import AddFoodOptionsModal from "../components/AddFoodOptionsModal.tsx";
+import AddFoodOptionsModal from "../components/AddFoodOptionsModal";
 
 // 👉 Import the plan context, not meals
-import { usePlan } from "../context/PlanContext";
-import { Section } from "../context/MealsContext";
+import { usePlan } from "@/context/PlanContext";
+import { Section } from "@/context/MealsContext";
 
 export default function MealPlanPage() {
   const { planData, addPlanFood } = usePlan();

@@ -1,4 +1,3 @@
-// app/userprofile.tsx
 import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
@@ -6,11 +5,14 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
+  SafeAreaView,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from './context/AuthContext';
-import { db } from './config/firebase';
+import { useAuth } from '@/context/AuthContext';
+import { db } from '@/config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { Stack } from 'expo-router';
 
 export default function UserProfile() {
   const { user } = useAuth();
@@ -36,15 +38,6 @@ export default function UserProfile() {
     fetchProfile();
   }, [user]);
 
-  if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
-  }
-
-  // fallback values if some fields are missing
   const data = {
     name: user?.displayName ?? profile?.name ?? 'User',
     age: profile?.age ?? '-',
@@ -60,33 +53,52 @@ export default function UserProfile() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.profilePic}>
-        <Ionicons name="person-circle" size={80} color="#007AFF" />
-      </View>
+    <>
+<Stack.Screen
+  options={{
+    title: 'Your Profile',
+    headerShown: true,
+    headerTintColor: '#007AFF',
+    headerStyle: { backgroundColor: '#fff' },
+    headerTitleStyle: { fontWeight: 'bold' },
+  }}
+/>
 
-      <View style={styles.infoBox}>
-        <Text style={styles.boxHeader}>Basic Information</Text>
-        <Text style={styles.infoText}>Name: {data.name}</Text>
-        <Text style={styles.infoText}>Age: {data.age}</Text>
-        <Text style={styles.infoText}>Height: {data.height}</Text>
-        <Text style={styles.infoText}>Weight: {data.weight}</Text>
-        <Text style={styles.infoText}>Started: {data.started}</Text>
-      </View>
 
-      <View style={styles.infoBox}>
-        <Text style={styles.boxHeader}>Goals</Text>
-        <Text style={styles.infoText}>Goal: {data.goal}</Text>
-        <Text style={styles.infoText}>Calorie Goal: {data.calGoal}</Text>
-      </View>
-    </ScrollView>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.profilePic}>
+            <Ionicons name="person-circle" size={80} color="#007AFF" />
+          </View>
+
+          <View style={styles.infoBox}>
+            <Text style={styles.boxHeader}>Basic Information</Text>
+            <Text style={styles.infoText}>Name: {data.name}</Text>
+            <Text style={styles.infoText}>Age: {data.age}</Text>
+            <Text style={styles.infoText}>Height: {data.height}</Text>
+            <Text style={styles.infoText}>Weight: {data.weight}</Text>
+            <Text style={styles.infoText}>Started: {data.started}</Text>
+          </View>
+
+          <View style={styles.infoBox}>
+            <Text style={styles.boxHeader}>Goals</Text>
+            <Text style={styles.infoText}>Goal: {data.goal}</Text>
+            <Text style={styles.infoText}>Calorie Goal: {data.calGoal}</Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  container: {
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  scrollContent: {
     padding: 20,
+    minHeight: Dimensions.get('window').height,
     backgroundColor: '#fff',
   },
   profilePic: {

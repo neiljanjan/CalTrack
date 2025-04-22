@@ -8,8 +8,8 @@ import {
   StyleSheet,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMeals, Meal, Section } from "./context/MealsContext";
-import { usePlan } from "./context/PlanContext";
+import { useMeals, Meal, Section } from "../context/MealsContext";
+import { usePlan } from "@/context/PlanContext";
 
 export default function SearchFoodItem() {
   const { section, dateKey } = useLocalSearchParams<{

@@ -4,8 +4,8 @@ import {
 } from 'react-native';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useAuth } from '../context/AuthContext';
-import { setUserProfile } from '../lib/firebaseUtils';
+import { useAuth } from '@/context/AuthContext';
+import { setUserProfile } from '@/lib/firebaseUtils';
 
 export default function Step4Onboarding() {
   const params = useLocalSearchParams<{ age?: string; weight?: string; height?: string }>();

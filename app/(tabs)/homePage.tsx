@@ -16,7 +16,7 @@ import Header from '../components/Header';
 import AddFoodOptionsModal from '../components/AddFoodOptionsModal';
 import SettingsModal from '../components/SettingsModal';
 import NotificationsModal from '../components/NotificationsModal';
-import { useMeals } from '../context/MealsContext';
+import { useMeals } from '@/context/MealsContext';
 
 const screenHeight = Dimensions.get('window').height;
 const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] as const;

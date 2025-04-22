@@ -8,7 +8,7 @@ import {
   Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Section } from "../context/MealsContext";
+import { Section } from "@/context/MealsContext";
 
 type Props = {
   visible: boolean;

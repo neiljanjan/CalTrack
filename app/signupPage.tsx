@@ -1,15 +1,11 @@
+// app/signupPage.tsx
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from './context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from './context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function SignupPage() {
@@ -19,14 +15,16 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleSignUp = async () => {
     if (password !== confirm) {
       return Alert.alert('Error', 'Passwords do not match');
     }
     try {
-      await signUp(email.trim(), password, name.trim());
-      router.replace('/(tabs)/homePage');
+      await signUp(email, password, name);
+      router.replace('/onboarding/step1');
     } catch (e: any) {
       Alert.alert('Sign Up failed', e.message);
     }
@@ -36,9 +34,9 @@ export default function SignupPage() {
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Create Account</Text>
 
-      {/* Name Input */}
+      {/* Name */}
       <View style={styles.inputContainer}>
-        <Ionicons name="person-outline" size={20} color="#666" />
+        <Ionicons name="person-outline" size={20} color="#333" style={styles.icon} />
         <TextInput
           style={styles.input}
           placeholder="Name"
@@ -48,9 +46,9 @@ export default function SignupPage() {
         />
       </View>
 
-      {/* Email Input */}
+      {/* Email */}
       <View style={styles.inputContainer}>
-        <Ionicons name="mail-outline" size={20} color="#666" />
+        <Ionicons name="mail-outline" size={20} color="#333" style={styles.icon} />
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -62,97 +60,66 @@ export default function SignupPage() {
         />
       </View>
 
-      {/* Password Input */}
+      {/* Password */}
       <View style={styles.inputContainer}>
-        <Ionicons name="lock-closed-outline" size={20} color="#666" />
+        <Ionicons name="lock-closed-outline" size={20} color="#333" style={styles.icon} />
         <TextInput
-          style={styles.input}
+          style={[styles.input, { paddingRight: 40 }]}
           placeholder="Password"
           placeholderTextColor="#666"
-          secureTextEntry
+          secureTextEntry={!showPassword}
           onChangeText={setPassword}
           value={password}
         />
+        <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
+          <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#666" />
+        </TouchableOpacity>
       </View>
 
       {/* Confirm Password */}
       <View style={styles.inputContainer}>
-        <Ionicons name="lock-closed-outline" size={20} color="#666" />
+        <Ionicons name="lock-closed-outline" size={20} color="#333" style={styles.icon} />
         <TextInput
-          style={styles.input}
+          style={[styles.input, { paddingRight: 40 }]}
           placeholder="Confirm Password"
           placeholderTextColor="#666"
-          secureTextEntry
+          secureTextEntry={!showConfirm}
           onChangeText={setConfirm}
           value={confirm}
         />
+        <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowConfirm(!showConfirm)}>
+          <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={20} color="#666" />
+        </TouchableOpacity>
       </View>
 
-      {/* Sign Up Button */}
       <TouchableOpacity onPress={handleSignUp} style={styles.button}>
-        <Text style={styles.buttonText}>Sign Up</Text>
+        <Text style={styles.btnText}>Sign Up</Text>
       </TouchableOpacity>
 
-      {/* Log In Link */}
       <TouchableOpacity onPress={() => router.push('/loginPage')}>
-        <Text style={styles.linkText}>
-          Already have an account? <Text style={styles.linkHighlight}>Log In</Text>
-        </Text>
+        <Text style={styles.link}>Already have an account? <Text style={styles.linkHighlight}>Log In</Text></Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 24,
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    textAlign: 'center',
-    marginBottom: 28,
-  },
+  container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#fff' },
+  title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 30, color: '#007AFF' },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-    height: 48,
+    borderWidth: 1, borderColor: '#ccc', borderRadius: 8,
+    paddingHorizontal: 10, marginBottom: 20, height: 50,
   },
-  input: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 16,
-    color: '#333',
+  icon: { marginRight: 10 },
+  input: { flex: 1, fontSize: 16, color: '#333' },
+  eyeIcon: {
+    position: 'absolute',
+    right: 12,
   },
-  button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    paddingVertical: 14,
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  buttonText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  linkText: {
-    textAlign: 'center',
-    fontSize: 14,
-    color: '#666',
-  },
-  linkHighlight: {
-    color: '#007AFF',
-    fontWeight: '500',
-  },
+  button: { backgroundColor: '#007AFF', padding: 15, borderRadius: 8, marginBottom: 20 },
+  btnText: { color: '#fff', textAlign: 'center', fontSize: 16, fontWeight: '600' },
+  link: { textAlign: 'center', fontSize: 14, color: '#666' },
+  linkHighlight: { color: '#007AFF', fontWeight: '500' },
 });

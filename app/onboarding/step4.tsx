@@ -57,7 +57,7 @@ const Step4Onboarding = () => {
           href="/(tabs)/homePage"
           style={[styles.actionButton, styles.nextButton]}
         >
-          <Text style={styles.buttonText}>Next</Text>
+        <Text style={styles.buttonText}>Next</Text>
         </Link>
       </View>
     </View>

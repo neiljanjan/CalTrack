@@ -1,15 +1,11 @@
+// app/loginPage.tsx
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from './context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from './context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginPage() {
@@ -17,6 +13,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     try {
@@ -49,21 +46,29 @@ export default function LoginPage() {
       <View style={styles.inputContainer}>
         <Ionicons name="lock-closed-outline" size={20} color="#666" />
         <TextInput
-          style={styles.input}
+          style={[styles.input, { paddingRight: 32 }]}
           placeholder="Password"
           placeholderTextColor="#666"
-          secureTextEntry
+          secureTextEntry={!showPassword}
           onChangeText={setPassword}
           value={password}
         />
+        <TouchableOpacity
+          onPress={() => setShowPassword(!showPassword)}
+          style={styles.eyeIcon}
+        >
+          <Ionicons
+            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+            size={20}
+            color="#666"
+          />
+        </TouchableOpacity>
       </View>
 
-      {/* Login Button */}
       <TouchableOpacity onPress={handleLogin} style={styles.button}>
         <Text style={styles.buttonText}>Log In</Text>
       </TouchableOpacity>
 
-      {/* Sign Up Link */}
       <TouchableOpacity onPress={() => router.push('/signupPage')}>
         <Text style={styles.linkText}>
           Don't have an account? <Text style={styles.linkHighlight}>Sign Up</Text>
@@ -102,6 +107,10 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     color: '#333',
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 12,
   },
   button: {
     backgroundColor: '#007AFF',

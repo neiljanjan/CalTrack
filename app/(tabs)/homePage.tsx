@@ -1,4 +1,3 @@
-// app/(tabs)/homePage.tsx
 import React, { useState } from 'react';
 import {
   ScrollView,
@@ -22,17 +21,27 @@ const screenHeight = Dimensions.get('window').height;
 const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] as const;
 
 export default function HomePage() {
-  console.log('Rendering HomePage');
   const insets = useSafeAreaInsets();
   const { mealsByType } = useMeals();
 
-  const consumed = Object.values(mealsByType)
-    .flat()
-    .reduce((sum, m) => sum + m.calories, 0);
+  const allMeals = Object.values(mealsByType).flat();
+  const consumed = allMeals.reduce((sum, m) => sum + m.calories, 0);
   const burned = 0;
   const net = consumed - burned;
   const goal = 2000;
   const displayValue = Math.min(consumed, goal);
+
+  const macroTotals = allMeals.reduce(
+    (acc, m) => {
+      if (m.macros) {
+        acc.protein += m.macros.protein;
+        acc.carbs += m.macros.carbs;
+        acc.fats += m.macros.fats;
+      }
+      return acc;
+    },
+    { protein: 0, carbs: 0, fats: 0 }
+  );
 
   const [section, setSection] = useState<typeof mealTypes[number]>('Breakfast');
   const [addVisible, setAddVisible] = useState(false);
@@ -55,7 +64,7 @@ export default function HomePage() {
 
         {/* Summary */}
         <View style={styles.summaryBox}>
-          <View style={styles.circularWrapper}>
+          <View style={styles.leftSummary}>
             <CircularProgress
               value={displayValue}
               radius={60}
@@ -71,7 +80,8 @@ export default function HomePage() {
               <Text style={styles.circularSubText}>calories</Text>
             </View>
           </View>
-          <View style={styles.linearContainer}>
+
+          <View style={styles.rightSummary}>
             {[
               { label: 'Consumed', value: consumed, color: '#007AFF' },
               { label: 'Burned', value: burned, color: '#FF9500' },
@@ -94,9 +104,34 @@ export default function HomePage() {
               </View>
             ))}
           </View>
+
+          {/* Macros - own section in bottom of summary box */}
+          <View style={styles.bottomSummary}>
+            {[
+              { label: 'Protein', value: macroTotals.protein, goal: 150, color: '#007AFF' },
+              { label: 'Carbs', value: macroTotals.carbs, goal: 250, color: '#FF9500' },
+              { label: 'Fats', value: macroTotals.fats, goal: 70, color: '#34C759' },
+            ].map((macro) => (
+              <View key={macro.label} style={styles.macroItem}>
+                <CircularProgress
+                  value={macro.value}
+                  radius={30}
+                  maxValue={macro.goal}
+                  progressValueColor="#333"
+                  activeStrokeColor={macro.color}
+                  inActiveStrokeColor="#e0e0e0"
+                  inActiveStrokeWidth={6}
+                  activeStrokeWidth={6}
+                  progressValueFontSize={14}
+                  valueSuffix="g"
+                />
+                <Text style={styles.macroLabel}>{macro.label}</Text>
+              </View>
+            ))}
+          </View>
         </View>
 
-        {/* Meal‐type toggle */}
+        {/* Meal-type toggle */}
         <View style={styles.toggleContainer}>
           {mealTypes.map((mt) => (
             <TouchableOpacity
@@ -119,7 +154,7 @@ export default function HomePage() {
           ))}
         </View>
 
-        {/* Meal list + “+” */}
+        {/* Meal list */}
         <View style={styles.mealsBox}>
           <Text style={styles.sectionTitle}>{section}</Text>
           {mealsByType[section].map((m, i) => (
@@ -153,7 +188,7 @@ export default function HomePage() {
         visible={addVisible}
         onClose={() => setAddVisible(false)}
         section={section}
-        dateKey={undefined} // ← force it to log to daily log
+        dateKey={undefined}
       />
       <SettingsModal
         visible={settingsVis}
@@ -178,13 +213,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0F7FA',
     borderRadius: 10,
     padding: 15,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 20,
   },
-  circularWrapper: {
-    position: 'relative',
+  leftSummary: {
+    position: 'absolute',
+    left: 15,
+    top: 15,
+  },
+  rightSummary: {
+    marginLeft: 150,
   },
   circularTextContainer: {
     position: 'absolute',
@@ -204,13 +241,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'green',
   },
-  linearContainer: {
-    flex: 1,
-    marginLeft: 15,
-  },
   linearItem: {
     marginBottom: 8,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   linearValue: {
     fontSize: 16,
@@ -230,6 +263,20 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: 3,
+  },
+  bottomSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+  },
+  macroItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  macroLabel: {
+    fontSize: 12,
+    color: '#333',
+    marginTop: 4,
   },
   toggleContainer: {
     flexDirection: 'row',

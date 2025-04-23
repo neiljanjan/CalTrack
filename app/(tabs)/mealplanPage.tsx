@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -12,26 +12,19 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import CircularProgress from "react-native-circular-progress-indicator";
 import Header from "../components/Header";
 import AddFoodOptionsModal from "../components/AddFoodOptionsModal";
-
-// 👉 Import the plan context, not meals
 import { usePlan } from "@/context/PlanContext";
 import { Section } from "@/context/MealsContext";
 
 export default function MealPlanPage() {
-  console.log('Rendering MealPlanPage');
-  const { planData, addPlanFood } = usePlan();
+  console.log("Rendering MealPlanPage");
+  const { planData } = usePlan();
 
-  // date picker
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-
-  // track which section’s “+” was tapped
   const [addingSection, setAddingSection] = useState<Section | null>(null);
 
-  // 👇 replace useMemo with this
-  const dateKey = selectedDate.toDateString(); // now it will update on any re-render
+  const dateKey = selectedDate.toDateString();
 
-  // 👇 and remove the memoized version entirely
   const mealsByTypeForDate = planData[dateKey] ?? {
     Breakfast: [],
     Lunch: [],
@@ -39,26 +32,36 @@ export default function MealPlanPage() {
     Snacks: [],
   };
 
-
-  // summary (totals for this plan page)
   const totalCalories = Object.values(mealsByTypeForDate)
     .flat()
     .reduce((sum, m) => sum + m.calories, 0);
+
+  const macroTotals = Object.values(mealsByTypeForDate)
+    .flat()
+    .reduce(
+      (totals, meal) => {
+        if (meal.macros) {
+          totals.protein += meal.macros.protein;
+          totals.carbs += meal.macros.carbs;
+          totals.fats += meal.macros.fats;
+        }
+        return totals;
+      },
+      { protein: 0, carbs: 0, fats: 0 }
+    );
+
+  const macroGoals = { protein: 100, carbs: 250, fats: 70 };
   const calorieGoal = 2000;
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
       <ScrollView contentContainerStyle={styles.container}>
         <Header
-          onSettingsPress={() => {
-            /* … */
-          }}
-          onNotificationsPress={() => {
-            /* … */
-          }}
+          onSettingsPress={() => {}}
+          onNotificationsPress={() => {}}
         />
 
-        {/* DATE PICKER */}
+        {/* Date Picker */}
         <TouchableOpacity
           style={styles.calendarButton}
           onPress={() => setShowDatePicker(true)}
@@ -75,7 +78,6 @@ export default function MealPlanPage() {
                   mode="date"
                   display="spinner"
                   onChange={(_, date) => {
-                    // only update on Done
                     if (date) setSelectedDate(date);
                   }}
                   {...(Platform.OS === "ios"
@@ -94,7 +96,7 @@ export default function MealPlanPage() {
           </Modal>
         )}
 
-        {/* PROGRESS */}
+        {/* Progress Ring + Macros */}
         <View style={styles.progressSection}>
           <View style={styles.circularWrapper}>
             <CircularProgress
@@ -112,10 +114,45 @@ export default function MealPlanPage() {
               <Text style={styles.circularSubText}>total calories</Text>
             </View>
           </View>
-          {/* …macros… */}
+
+          {/* Macros */}
+          <View style={styles.macroContainer}>
+            {["protein", "carbs", "fats"].map((macro) => {
+              const label = macro.charAt(0).toUpperCase() + macro.slice(1);
+              const value = macroTotals[macro as keyof typeof macroTotals];
+              const goal = macroGoals[macro as keyof typeof macroGoals];
+              const percent = Math.min((value / goal) * 100, 100);
+
+              const barColor =
+                macro === "protein"
+                  ? "#34C759"
+                  : macro === "carbs"
+                  ? "#007AFF"
+                  : "#FF9500";
+
+              return (
+                <View key={macro}>
+                  <Text style={styles.macroLabel}>
+                    {label}: {value}g / {goal}g
+                  </Text>
+                  <View style={styles.macroBar}>
+                    <View
+                      style={[
+                        styles.macroFill,
+                        {
+                          width: `${percent}%`,
+                          backgroundColor: barColor,
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
         </View>
 
-        {/* MEAL SECTIONS */}
+        {/* Meal Sections */}
         {(Object.keys(mealsByTypeForDate) as Section[]).map((section) => (
           <View key={section} style={styles.mealSection}>
             <View style={styles.mealSectionHeader}>
@@ -138,7 +175,6 @@ export default function MealPlanPage() {
         ))}
       </ScrollView>
 
-      {/* ADD FOOD MODAL now gets dateKey */}
       <AddFoodOptionsModal
         visible={!!addingSection}
         onClose={() => setAddingSection(null)}
@@ -228,6 +264,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#e0e0e0",
     borderRadius: 5,
     marginBottom: 10,
+    overflow: "hidden",
   },
   macroFill: {
     height: "100%",

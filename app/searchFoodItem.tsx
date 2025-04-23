@@ -24,21 +24,63 @@ export default function SearchFoodItem() {
   const router = useRouter();
   const [query, setQuery] = useState("");
 
-  // dummy master list, sorted
+
+  //dummy data
   const allFoods: Meal[] = useMemo(
     () =>
       [
-        { name: "Apple", servings: 1, calories: 80 },
-        { name: "Avocado Toast", servings: 1, calories: 180 },
-        { name: "Banana", servings: 1, calories: 105 },
-        { name: "Granola Bar", servings: 1, calories: 150 },
-        { name: "Kale Salad", servings: 1, calories: 120 },
-        { name: "Mixed Nuts", servings: 1, calories: 200 },
-        { name: "Smoothie Bowl", servings: 1, calories: 250 },
-        { name: "Turkey Sandwich", servings: 1, calories: 320 },
+        {
+          name: "Apple",
+          servings: 1,
+          calories: 80,
+          macros: { protein: 0, carbs: 22, fats: 0 },
+        },
+        {
+          name: "Avocado Toast",
+          servings: 1,
+          calories: 180,
+          macros: { protein: 4, carbs: 20, fats: 10 },
+        },
+        {
+          name: "Banana",
+          servings: 1,
+          calories: 105,
+          macros: { protein: 1, carbs: 27, fats: 0 },
+        },
+        {
+          name: "Granola Bar",
+          servings: 1,
+          calories: 150,
+          macros: { protein: 3, carbs: 17, fats: 7 },
+        },
+        {
+          name: "Kale Salad",
+          servings: 1,
+          calories: 120,
+          macros: { protein: 5, carbs: 10, fats: 6 },
+        },
+        {
+          name: "Mixed Nuts",
+          servings: 1,
+          calories: 200,
+          macros: { protein: 6, carbs: 8, fats: 18 },
+        },
+        {
+          name: "Smoothie Bowl",
+          servings: 1,
+          calories: 250,
+          macros: { protein: 7, carbs: 35, fats: 9 },
+        },
+        {
+          name: "Turkey Sandwich",
+          servings: 1,
+          calories: 320,
+          macros: { protein: 20, carbs: 30, fats: 12 },
+        },
       ].sort((a, b) => a.name.localeCompare(b.name)),
     []
   );
+  
 
   // live filter
   const results = useMemo(

@@ -1,9 +1,10 @@
-// app/services/firestore.ts
+// /services/firestore.ts
 import { db } from '../config/firebase';
 import { Meal } from '../context/MealsContext';
 import {
   collection,
   doc,
+  getDoc,
   setDoc,
   addDoc,
   onSnapshot,
@@ -46,3 +47,45 @@ export function listenToMeals(
     callback(docs);
   });
 }
+
+// Save meal plan for a given date and section
+export async function saveMealPlan(
+  uid: string,
+  date: string,
+  section: string,
+  meals: Meal[]
+) {
+  const planDoc = doc(db, 'users', uid, 'mealPlans', date);
+  return setDoc(planDoc, {
+    [section]: meals,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+// Fetch meal plan for a date
+export async function fetchMealPlanForDate(
+  uid: string,
+  date: string
+): Promise<Record<string, Meal[]>> {
+  const docRef = doc(db, 'users', uid, 'mealPlans', date);
+  const snap = await getDoc(docRef);
+  return snap.exists() ? (snap.data() as Record<string, Meal[]>) : {
+    Breakfast: [],
+    Lunch: [],
+    Dinner: [],
+    Snacks: [],
+  };
+}
+
+export const getPlanForDate = async (uid: string, dateKey: string) => {
+  const docRef = doc(db, 'users', uid, 'mealPlans', dateKey);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    console.log("📄 Fetched Firestore doc:", data);
+    return data;
+  } else {
+    console.log("🛑 No doc found for", dateKey);
+    return null;
+  }
+};

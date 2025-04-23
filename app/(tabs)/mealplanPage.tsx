@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,56 +12,50 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import CircularProgress from "react-native-circular-progress-indicator";
 import Header from "../components/Header";
 import AddFoodOptionsModal from "../components/AddFoodOptionsModal";
+import { useAuth } from "@/context/AuthContext";
 import { usePlan } from "@/context/PlanContext";
 import { Section } from "@/context/MealsContext";
 
 export default function MealPlanPage() {
-  console.log("Rendering MealPlanPage");
-  const { planData } = usePlan();
+  const { user } = useAuth();
+  const { planData, addPlanFood, loadPlanForDate } = usePlan();
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [addingSection, setAddingSection] = useState<Section | null>(null);
 
   const dateKey = selectedDate.toDateString();
+  const mealsByTypeForDate = planData[dateKey];
 
-  const mealsByTypeForDate = planData[dateKey] ?? {
+  const isLoaded = !!mealsByTypeForDate;
+  const safeMeals = mealsByTypeForDate ?? {
     Breakfast: [],
     Lunch: [],
     Dinner: [],
     Snacks: [],
   };
 
-  const totalCalories = Object.values(mealsByTypeForDate)
+  useEffect(() => {
+    if (user) {
+      loadPlanForDate(user.uid, dateKey);
+    }
+  }, [user, dateKey]);
+
+  useEffect(() => {
+    console.log('🧠 Current planData:', planData);
+  }, [planData]);
+
+  const totalCalories = Object.values(safeMeals)
     .flat()
     .reduce((sum, m) => sum + m.calories, 0);
 
-  const macroTotals = Object.values(mealsByTypeForDate)
-    .flat()
-    .reduce(
-      (totals, meal) => {
-        if (meal.macros) {
-          totals.protein += meal.macros.protein;
-          totals.carbs += meal.macros.carbs;
-          totals.fats += meal.macros.fats;
-        }
-        return totals;
-      },
-      { protein: 0, carbs: 0, fats: 0 }
-    );
-
-  const macroGoals = { protein: 100, carbs: 250, fats: 70 };
   const calorieGoal = 2000;
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Header
-          onSettingsPress={() => {}}
-          onNotificationsPress={() => {}}
-        />
+        <Header onSettingsPress={() => {}} onNotificationsPress={() => {}} />
 
-        {/* Date Picker */}
         <TouchableOpacity
           style={styles.calendarButton}
           onPress={() => setShowDatePicker(true)}
@@ -96,7 +90,6 @@ export default function MealPlanPage() {
           </Modal>
         )}
 
-        {/* Progress Ring + Macros */}
         <View style={styles.progressSection}>
           <View style={styles.circularWrapper}>
             <CircularProgress
@@ -114,65 +107,34 @@ export default function MealPlanPage() {
               <Text style={styles.circularSubText}>total calories</Text>
             </View>
           </View>
-
-          {/* Macros */}
-          <View style={styles.macroContainer}>
-            {["protein", "carbs", "fats"].map((macro) => {
-              const label = macro.charAt(0).toUpperCase() + macro.slice(1);
-              const value = macroTotals[macro as keyof typeof macroTotals];
-              const goal = macroGoals[macro as keyof typeof macroGoals];
-              const percent = Math.min((value / goal) * 100, 100);
-
-              const barColor =
-                macro === "protein"
-                  ? "#34C759"
-                  : macro === "carbs"
-                  ? "#007AFF"
-                  : "#FF9500";
-
-              return (
-                <View key={macro}>
-                  <Text style={styles.macroLabel}>
-                    {label}: {value}g / {goal}g
-                  </Text>
-                  <View style={styles.macroBar}>
-                    <View
-                      style={[
-                        styles.macroFill,
-                        {
-                          width: `${percent}%`,
-                          backgroundColor: barColor,
-                        },
-                      ]}
-                    />
-                  </View>
-                </View>
-              );
-            })}
-          </View>
         </View>
 
-        {/* Meal Sections */}
-        {(Object.keys(mealsByTypeForDate) as Section[]).map((section) => (
-          <View key={section} style={styles.mealSection}>
-            <View style={styles.mealSectionHeader}>
-              <Text style={styles.mealSectionTitle}>{section}</Text>
-              <TouchableOpacity
-                style={styles.addMealButton}
-                onPress={() => setAddingSection(section)}
-              >
-                <Text style={styles.addMealButtonText}>＋</Text>
-              </TouchableOpacity>
-            </View>
-            {mealsByTypeForDate[section].map((meal, i) => (
-              <View key={i} style={styles.mealItem}>
-                <Text style={styles.mealItemText}>
-                  {meal.name} – {meal.calories} kcal
-                </Text>
+        {isLoaded ? (
+          (Object.keys(safeMeals) as Section[]).map((section) => (
+            <View key={section} style={styles.mealSection}>
+              <View style={styles.mealSectionHeader}>
+                <Text style={styles.mealSectionTitle}>{section}</Text>
+                <TouchableOpacity
+                  style={styles.addMealButton}
+                  onPress={() => setAddingSection(section)}
+                >
+                  <Text style={styles.addMealButtonText}>＋</Text>
+                </TouchableOpacity>
               </View>
-            ))}
-          </View>
-        ))}
+              {safeMeals[section].map((meal, i) => (
+                <View key={i} style={styles.mealItem}>
+                  <Text style={styles.mealItemText}>
+                    {meal.name} – {meal.calories} kcal
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ))
+        ) : (
+          <Text style={{ textAlign: "center", marginTop: 20 }}>
+            Loading meal plan...
+          </Text>
+        )}
       </ScrollView>
 
       <AddFoodOptionsModal
@@ -249,26 +211,6 @@ const styles = StyleSheet.create({
   circularSubText: {
     fontSize: 14,
     color: "green",
-  },
-  macroContainer: {
-    flex: 1,
-    paddingLeft: 10,
-  },
-  macroLabel: {
-    fontSize: 14,
-    marginBottom: 4,
-    color: "#333",
-  },
-  macroBar: {
-    height: 10,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 5,
-    marginBottom: 10,
-    overflow: "hidden",
-  },
-  macroFill: {
-    height: "100%",
-    borderRadius: 5,
   },
   mealSection: {
     width: "90%",

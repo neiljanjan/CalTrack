@@ -12,10 +12,13 @@ import { useMeals, Meal, Section } from "../context/MealsContext";
 import { usePlan } from "@/context/PlanContext";
 
 export default function SearchFoodItem() {
-  const { section, dateKey } = useLocalSearchParams<{
+  console.log('Rendering SearchFoodItem');
+  const { section, dateKey, source } = useLocalSearchParams<{
     section: Section;
     dateKey?: string;
+    source: 'log' | 'plan';
   }>();
+  
   const { addFood } = useMeals();
   const { addPlanFood } = usePlan();
   const router = useRouter();
@@ -47,13 +50,16 @@ export default function SearchFoodItem() {
   );
 
   const onAdd = (item: Meal) => {
-    if (dateKey) {
+    console.log("Adding to", source, item); // ← Debug log
+  
+    if (source === "plan" && dateKey) {
       addPlanFood(dateKey, section, item);
     } else {
       addFood(section, item);
     }
+  
     router.back();
-  };
+  };  
 
   return (
     <View style={styles.container}>

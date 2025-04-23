@@ -37,9 +37,14 @@ const AddFoodOptionsModal: React.FC<Props> = ({
   const go = (path: "barcodeScanner" | "searchFoodItem") => {
     onClose();
     let qs = `section=${section}`;
-    if (dateKey) qs += `&dateKey=${encodeURIComponent(dateKey)}`;
+    if (dateKey) {
+      qs += `&dateKey=${encodeURIComponent(dateKey)}&source=plan`;
+    } else {
+      qs += `&source=log`;
+    }
     router.push(`/${path}?${qs}`);
   };
+  
 
   return (
     <Modal transparent visible={visible} animationType="none">

@@ -22,6 +22,7 @@ const screenHeight = Dimensions.get('window').height;
 const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] as const;
 
 export default function HomePage() {
+  console.log('Rendering HomePage');
   const insets = useSafeAreaInsets();
   const { mealsByType } = useMeals();
 
@@ -152,6 +153,7 @@ export default function HomePage() {
         visible={addVisible}
         onClose={() => setAddVisible(false)}
         section={section}
+        dateKey={undefined} // ← force it to log to daily log
       />
       <SettingsModal
         visible={settingsVis}

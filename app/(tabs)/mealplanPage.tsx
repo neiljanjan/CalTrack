@@ -18,6 +18,7 @@ import { usePlan } from "@/context/PlanContext";
 import { Section } from "@/context/MealsContext";
 
 export default function MealPlanPage() {
+  console.log('Rendering MealPlanPage');
   const { planData, addPlanFood } = usePlan();
 
   // date picker
@@ -27,16 +28,17 @@ export default function MealPlanPage() {
   // track which section’s “+” was tapped
   const [addingSection, setAddingSection] = useState<Section | null>(null);
 
-  // key by date string
-  const dateKey = useMemo(() => selectedDate.toDateString(), [selectedDate]);
+  // 👇 replace useMemo with this
+  const dateKey = selectedDate.toDateString(); // now it will update on any re-render
 
-  // lookup that day’s meals (or empty if none)
+  // 👇 and remove the memoized version entirely
   const mealsByTypeForDate = planData[dateKey] ?? {
     Breakfast: [],
     Lunch: [],
     Dinner: [],
     Snacks: [],
   };
+
 
   // summary (totals for this plan page)
   const totalCalories = Object.values(mealsByTypeForDate)

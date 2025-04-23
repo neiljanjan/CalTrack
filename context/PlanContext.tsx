@@ -1,10 +1,11 @@
+// context/PlanContext.tsx
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { Meal, Section } from "./MealsContext";
 
 export type MealsByType = Record<Section, Meal[]>;
 export type PlanData = Record<string, MealsByType>;
 
-export interface PlanContextType {
+interface PlanContextType {
   planData: PlanData;
   addPlanFood: (dateKey: string, section: Section, item: Meal) => void;
 }

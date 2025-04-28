@@ -1,3 +1,5 @@
+// lib/firebaseUtils.ts
+
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 

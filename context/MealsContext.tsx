@@ -1,3 +1,5 @@
+// context/MealsContext.tsx
+
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { addMealEntry, listenToMeals } from '@/services/firestore';
@@ -37,9 +39,10 @@ export const MealsProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [mealsByType, setMealsByType] = useState<MealsByType>(defaultMeals);
 
-  // 🔁 Fetch from Firestore on user login
   useEffect(() => {
     if (!user) return;
+
+    const today = new Date().toDateString(); // 🗓 get today's date string
 
     const unsubscribe = listenToMeals(user.uid, (meals) => {
       const grouped: MealsByType = {
@@ -50,14 +53,16 @@ export const MealsProvider = ({ children }: { children: ReactNode }) => {
       };
 
       meals.forEach((m) => {
-        const section = m.section as Section;
-        if (grouped[section]) {
-          grouped[section].push({
-            name: m.name,
-            servings: m.servings,
-            calories: m.calories,
-            macros: m.macros,
-          });
+        if (m.date === today) { // 📅 Only use today's meals
+          const section = m.section as Section;
+          if (grouped[section]) {
+            grouped[section].push({
+              name: m.name,
+              servings: m.servings,
+              calories: m.calories,
+              macros: m.macros,
+            });
+          }
         }
       });
 

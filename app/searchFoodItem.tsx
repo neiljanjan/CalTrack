@@ -1,3 +1,5 @@
+// app/searchFoodItem.tsx
+
 import React, { useState, useMemo } from "react";
 import {
   View,

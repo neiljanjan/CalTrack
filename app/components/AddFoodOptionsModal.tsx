@@ -1,3 +1,5 @@
+// app/components/AddFoodOptionsModal.tsx
+
 import React, { useRef, useEffect } from "react";
 import {
   Modal,

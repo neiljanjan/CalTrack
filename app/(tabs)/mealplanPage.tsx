@@ -1,3 +1,5 @@
+// app/(tabs)/mealplanPage.tsx
+
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -7,27 +9,39 @@ import {
   TouchableOpacity,
   Modal,
   Platform,
+  Dimensions,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CircularProgress from "react-native-circular-progress-indicator";
 import Header from "../components/Header";
 import AddFoodOptionsModal from "../components/AddFoodOptionsModal";
+import SettingsModal from "../components/SettingsModal";
+import NotificationsModal from "../components/NotificationsModal";
 import { useAuth } from "@/context/AuthContext";
 import { usePlan } from "@/context/PlanContext";
 import { Section } from "@/context/MealsContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { saveMealPlan } from "@/services/firestore";
+
+const screenHeight = Dimensions.get("window").height;
+const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snacks"] as const;
 
 export default function MealPlanPage() {
   const { user } = useAuth();
-  const { planData, addPlanFood, loadPlanForDate } = usePlan();
+  const { planData, addPlanFood, loadPlanForDate, loadingDates } = usePlan();
+  const insets = useSafeAreaInsets();
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [addingSection, setAddingSection] = useState<Section | null>(null);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
 
   const dateKey = selectedDate.toDateString();
   const mealsByTypeForDate = planData[dateKey];
+  const isLoading = loadingDates.has(dateKey);
 
-  const isLoaded = !!mealsByTypeForDate;
   const safeMeals = mealsByTypeForDate ?? {
     Breakfast: [],
     Lunch: [],
@@ -35,26 +49,57 @@ export default function MealPlanPage() {
     Snacks: [],
   };
 
+  const allMeals = Object.values(safeMeals).flat();
+
+  const totalCalories = allMeals.reduce((sum, m) => sum + m.calories, 0);
+  const macroTotals = allMeals.reduce(
+    (acc, m) => {
+      if (m.macros) {
+        acc.protein += m.macros.protein;
+        acc.carbs += m.macros.carbs;
+        acc.fats += m.macros.fats;
+      }
+      return acc;
+    },
+    { protein: 0, carbs: 0, fats: 0 }
+  );
+
+  const calorieGoal = 2000;
+
   useEffect(() => {
     if (user) {
       loadPlanForDate(user.uid, dateKey);
     }
   }, [user, dateKey]);
 
-  useEffect(() => {
-    console.log('🧠 Current planData:', planData);
-  }, [planData]);
+  const handleAddFood = (section: Section, meal: any) => {
+    if (!user) return;
+    addPlanFood(dateKey, section, meal);
 
-  const totalCalories = Object.values(safeMeals)
-    .flat()
-    .reduce((sum, m) => sum + m.calories, 0);
-
-  const calorieGoal = 2000;
+    // After adding locally, immediately save to Firestore
+    saveMealPlan(user.uid, dateKey, section, [
+      ...(safeMeals[section] || []),
+      meal,
+    ]);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Header onSettingsPress={() => {}} onNotificationsPress={() => {}} />
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          {
+            paddingBottom: insets.bottom + 50,
+            paddingTop: insets.top + 20,
+            minHeight: screenHeight,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Header
+          onSettingsPress={() => setSettingsVisible(true)}
+          onNotificationsPress={() => setNotificationsVisible(true)}
+        />
 
         <TouchableOpacity
           style={styles.calendarButton}
@@ -90,67 +135,120 @@ export default function MealPlanPage() {
           </Modal>
         )}
 
-        <View style={styles.progressSection}>
-          <View style={styles.circularWrapper}>
-            <CircularProgress
-              value={totalCalories}
-              radius={80}
-              maxValue={calorieGoal}
-              showProgressValue={false}
-              inActiveStrokeColor="#e0e0e0"
-              activeStrokeColor="green"
-              inActiveStrokeWidth={12}
-              activeStrokeWidth={12}
-            />
-            <View style={styles.circularTextContainer}>
-              <Text style={styles.circularText}>{totalCalories}</Text>
-              <Text style={styles.circularSubText}>total calories</Text>
-            </View>
+        {/* Summary */}
+        <View style={styles.summaryBox}>
+          <CircularProgress
+            value={totalCalories}
+            radius={80}
+            maxValue={calorieGoal}
+            showProgressValue={false}
+            inActiveStrokeColor="#e0e0e0"
+            activeStrokeColor="green"
+            inActiveStrokeWidth={12}
+            activeStrokeWidth={12}
+          />
+          <View style={styles.circularTextContainer}>
+            <Text style={styles.circularText}>{totalCalories}</Text>
+            <Text style={styles.circularSubText}>calories</Text>
+          </View>
+
+          {/* Macros */}
+          <View style={styles.bottomSummary}>
+            {[
+              { label: "Protein", value: macroTotals.protein, goal: 150, color: "#007AFF" },
+              { label: "Carbs", value: macroTotals.carbs, goal: 250, color: "#FF9500" },
+              { label: "Fats", value: macroTotals.fats, goal: 70, color: "#34C759" },
+            ].map((macro) => (
+              <View key={macro.label} style={styles.macroItem}>
+                <CircularProgress
+                  value={macro.value}
+                  radius={30}
+                  maxValue={macro.goal}
+                  progressValueColor="#333"
+                  activeStrokeColor={macro.color}
+                  inActiveStrokeColor="#e0e0e0"
+                  inActiveStrokeWidth={6}
+                  activeStrokeWidth={6}
+                  progressValueFontSize={14}
+                  valueSuffix="g"
+                />
+                <Text style={styles.macroLabel}>{macro.label}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
-        {isLoaded ? (
-          (Object.keys(safeMeals) as Section[]).map((section) => (
-            <View key={section} style={styles.mealSection}>
-              <View style={styles.mealSectionHeader}>
-                <Text style={styles.mealSectionTitle}>{section}</Text>
-                <TouchableOpacity
-                  style={styles.addMealButton}
-                  onPress={() => setAddingSection(section)}
-                >
-                  <Text style={styles.addMealButtonText}>＋</Text>
-                </TouchableOpacity>
-              </View>
-              {safeMeals[section].map((meal, i) => (
-                <View key={i} style={styles.mealItem}>
-                  <Text style={styles.mealItemText}>
-                    {meal.name} – {meal.calories} kcal
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ))
-        ) : (
+        {/* Meals Section */}
+        {isLoading ? (
           <Text style={{ textAlign: "center", marginTop: 20 }}>
             Loading meal plan...
           </Text>
+        ) : (
+          (Object.keys(safeMeals) as Section[]).map((section) => (
+            <View key={section} style={styles.mealsBox}>
+              <View style={styles.mealSectionHeader}>
+                <Text style={styles.sectionTitle}>{section}</Text>
+              </View>
+
+              {safeMeals[section].map((meal, i) => (
+                <View key={i} style={styles.mealItem}>
+                  <Ionicons
+                    name="fast-food-outline"
+                    size={24}
+                    color="#007AFF"
+                    style={{ marginRight: 8 }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.mealName}>{meal.name}</Text>
+                    <Text style={styles.mealDetails}>
+                      {meal.servings}× • {meal.calories} kcal
+                    </Text>
+                  </View>
+                </View>
+              ))}
+
+              {/* Add Food Button */}
+              <View style={styles.addSection}>
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={() => setAddingSection(section)}
+                >
+                  <Text style={styles.addButtonText}>＋</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
         )}
       </ScrollView>
 
-      <AddFoodOptionsModal
-        visible={!!addingSection}
-        onClose={() => setAddingSection(null)}
-        section={addingSection!}
-        dateKey={dateKey}
+      {addingSection && (
+        <AddFoodOptionsModal
+          visible={true}
+          onClose={() => setAddingSection(null)}
+          section={addingSection}
+          dateKey={dateKey}
+        />
+      )}
+
+      {/* New: Working modals */}
+      <SettingsModal
+        visible={settingsVisible}
+        onClose={() => setSettingsVisible(false)}
+      />
+      <NotificationsModal
+        visible={notificationsVisible}
+        onClose={() => setNotificationsVisible(false)}
       />
     </View>
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 20,
+    backgroundColor: "#fff",
     alignItems: "center",
+    paddingVertical: 20,
   },
   calendarButton: {
     marginBottom: 20,
@@ -183,23 +281,18 @@ const styles = StyleSheet.create({
     color: "#007AFF",
     fontSize: 16,
   },
-  progressSection: {
-    flexDirection: "row",
+  summaryBox: {
     width: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
     marginBottom: 20,
     alignItems: "center",
-  },
-  circularWrapper: {
-    flex: 1,
-    alignItems: "center",
-    position: "relative",
+    elevation: 2,
   },
   circularTextContainer: {
     position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
+    top: "32%",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -212,41 +305,73 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "green",
   },
-  mealSection: {
+  bottomSummary: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginTop: 20,
+  },
+  macroItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  macroLabel: {
+    fontSize: 12,
+    color: "#333",
+    marginTop: 4,
+  },
+  mealsBox: {
     width: "90%",
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#F9F9F9",
     borderRadius: 10,
     padding: 15,
     marginBottom: 20,
+    elevation: 2,
   },
   mealSectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     marginBottom: 10,
   },
-  mealSectionTitle: {
+  sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
-  },
-  addMealButton: {
-    backgroundColor: "#007AFF",
-    borderRadius: 20,
-    width: 36,
-    height: 36,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  addMealButtonText: {
-    color: "#fff",
-    fontSize: 24,
-    lineHeight: 24,
   },
   mealItem: {
-    paddingVertical: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    width: "100%",
   },
-  mealItemText: {
+  mealName: {
     fontSize: 16,
+    fontWeight: "500",
+  },
+  mealDetails: {
+    fontSize: 12,
+    color: "#666",
+  },
+  addSection: {
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    paddingVertical: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  addButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF',
+    borderWidth: 2,
+    borderColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 24,
+    lineHeight: 24,
   },
 });

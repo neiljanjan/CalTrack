@@ -1,3 +1,5 @@
+// app/(tabs)/homePage.tsx
+
 import React, { useState } from 'react';
 import {
   ScrollView,

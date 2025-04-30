@@ -1,6 +1,6 @@
 // app/(tabs)/homePage.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
   View,
@@ -18,6 +18,9 @@ import AddFoodOptionsModal from '../components/AddFoodOptionsModal';
 import SettingsModal from '../components/SettingsModal';
 import NotificationsModal from '../components/NotificationsModal';
 import { useMeals } from '@/context/MealsContext';
+import { useAuth } from '@/context/AuthContext';
+import { db } from '@/config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const screenHeight = Dimensions.get('window').height;
 const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] as const;
@@ -25,12 +28,38 @@ const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] as const;
 export default function HomePage() {
   const insets = useSafeAreaInsets();
   const { mealsByType } = useMeals();
+  const { user } = useAuth();
+
+  const [calGoal, setCalGoal] = useState(2000);
+  const [section, setSection] = useState<typeof mealTypes[number]>('Breakfast');
+  const [addVisible, setAddVisible] = useState(false);
+  const [settingsVis, setSettingsVis] = useState(false);
+  const [notifyVis, setNotifyVis] = useState(false);
+
+  useEffect(() => {
+    const fetchGoal = async () => {
+      if (!user) return;
+      try {
+        const ref = doc(db, 'users', user.uid);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.calIntakeGoal) {
+            setCalGoal(data.calIntakeGoal);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading calorie goal:', err);
+      }
+    };
+    fetchGoal();
+  }, [user]);
 
   const allMeals = Object.values(mealsByType).flat();
   const consumed = allMeals.reduce((sum, m) => sum + m.calories, 0);
   const burned = 0;
   const net = consumed - burned;
-  const goal = 2000;
+  const goal = calGoal;
   const displayValue = Math.min(consumed, goal);
 
   const macroTotals = allMeals.reduce(
@@ -44,11 +73,6 @@ export default function HomePage() {
     },
     { protein: 0, carbs: 0, fats: 0 }
   );
-
-  const [section, setSection] = useState<typeof mealTypes[number]>('Breakfast');
-  const [addVisible, setAddVisible] = useState(false);
-  const [settingsVis, setSettingsVis] = useState(false);
-  const [notifyVis, setNotifyVis] = useState(false);
 
   return (
     <>
@@ -107,7 +131,7 @@ export default function HomePage() {
             ))}
           </View>
 
-          {/* Macros - own section in bottom of summary box */}
+          {/* Macros */}
           <View style={styles.bottomSummary}>
             {[
               { label: 'Protein', value: macroTotals.protein, goal: 150, color: '#007AFF' },
@@ -116,7 +140,7 @@ export default function HomePage() {
             ].map((macro) => (
               <View key={macro.label} style={styles.macroItem}>
                 <CircularProgress
-                  value={macro.value}
+                  value={Math.min(macro.value, macro.goal)}
                   radius={30}
                   maxValue={macro.goal}
                   progressValueColor="#333"
@@ -192,14 +216,8 @@ export default function HomePage() {
         section={section}
         dateKey={undefined}
       />
-      <SettingsModal
-        visible={settingsVis}
-        onClose={() => setSettingsVis(false)}
-      />
-      <NotificationsModal
-        visible={notifyVis}
-        onClose={() => setNotifyVis(false)}
-      />
+      <SettingsModal visible={settingsVis} onClose={() => setSettingsVis(false)} />
+      <NotificationsModal visible={notifyVis} onClose={() => setNotifyVis(false)} />
     </>
   );
 }

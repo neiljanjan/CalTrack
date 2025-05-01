@@ -13,6 +13,8 @@ export type Meal = {
     carbs: number;
     fats: number;
   };
+  date: string;           // ✅ now required
+  section: Section;       // ✅ also required
 };
 
 export type Section = 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
@@ -20,7 +22,7 @@ type MealsByType = Record<Section, Meal[]>;
 
 type MealsContextType = {
   mealsByType: MealsByType;
-  addFood: (section: Section, item: Meal) => void;
+  addFood: (section: Section, item: Omit<Meal, 'date' | 'section'>) => void;
 };
 
 const defaultMeals: MealsByType = {
@@ -42,7 +44,7 @@ export const MealsProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!user) return;
 
-    const today = new Date().toDateString(); // 🗓 get today's date string
+    const today = new Date().toDateString();
 
     const unsubscribe = listenToMeals(user.uid, (meals) => {
       const grouped: MealsByType = {
@@ -53,7 +55,7 @@ export const MealsProvider = ({ children }: { children: ReactNode }) => {
       };
 
       meals.forEach((m) => {
-        if (m.date === today) { // 📅 Only use today's meals
+        if (m.date === today) {
           const section = m.section as Section;
           if (grouped[section]) {
             grouped[section].push({
@@ -61,6 +63,8 @@ export const MealsProvider = ({ children }: { children: ReactNode }) => {
               servings: m.servings,
               calories: m.calories,
               macros: m.macros,
+              date: m.date,
+              section: section,
             });
           }
         }
@@ -72,12 +76,12 @@ export const MealsProvider = ({ children }: { children: ReactNode }) => {
     return unsubscribe;
   }, [user]);
 
-  const addFood = async (section: Section, item: Meal) => {
+  const addFood = async (section: Section, item: Omit<Meal, 'date' | 'section'>) => {
     if (!user) return;
 
     const today = new Date().toDateString();
 
-    const mealWithMeta = {
+    const mealWithMeta: Meal = {
       ...item,
       section,
       date: today,

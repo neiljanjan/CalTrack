@@ -1,6 +1,6 @@
 // app/searchFoodItem.tsx
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   TextInput,
@@ -8,102 +8,79 @@ import {
   TouchableOpacity,
   Text,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMeals, Meal, Section } from "../context/MealsContext";
+import { useMeals, Section } from "../context/MealsContext";
 import { usePlan } from "@/context/PlanContext";
+import { searchFoods, getNutritionDetails } from "@/lib/nutritionix";
 
 export default function SearchFoodItem() {
-  console.log('Rendering SearchFoodItem');
   const { section, dateKey, source } = useLocalSearchParams<{
     section: Section;
     dateKey?: string;
-    source: 'log' | 'plan';
+    source: "log" | "plan";
   }>();
-  
+
   const { addFood } = useMeals();
   const { addPlanFood } = usePlan();
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<{ food_name: string }[]>([]);
+  const [loading, setLoading] = useState(false);
 
-
-  //dummy data
-  const allFoods: Meal[] = useMemo(
-    () =>
-      [
-        {
-          name: "Apple",
-          servings: 1,
-          calories: 80,
-          macros: { protein: 0, carbs: 22, fats: 0 },
-        },
-        {
-          name: "Avocado Toast",
-          servings: 1,
-          calories: 180,
-          macros: { protein: 4, carbs: 20, fats: 10 },
-        },
-        {
-          name: "Banana",
-          servings: 1,
-          calories: 105,
-          macros: { protein: 1, carbs: 27, fats: 0 },
-        },
-        {
-          name: "Granola Bar",
-          servings: 1,
-          calories: 150,
-          macros: { protein: 3, carbs: 17, fats: 7 },
-        },
-        {
-          name: "Kale Salad",
-          servings: 1,
-          calories: 120,
-          macros: { protein: 5, carbs: 10, fats: 6 },
-        },
-        {
-          name: "Mixed Nuts",
-          servings: 1,
-          calories: 200,
-          macros: { protein: 6, carbs: 8, fats: 18 },
-        },
-        {
-          name: "Smoothie Bowl",
-          servings: 1,
-          calories: 250,
-          macros: { protein: 7, carbs: 35, fats: 9 },
-        },
-        {
-          name: "Turkey Sandwich",
-          servings: 1,
-          calories: 320,
-          macros: { protein: 20, carbs: 30, fats: 12 },
-        },
-      ].sort((a, b) => a.name.localeCompare(b.name)),
-    []
-  );
-  
-
-  // live filter
-  const results = useMemo(
-    () =>
-      allFoods.filter((f) =>
-        f.name.toLowerCase().includes(query.trim().toLowerCase())
-      ),
-    [allFoods, query]
-  );
-
-  const onAdd = (item: Meal) => {
-    console.log("Adding to", source, item); // ← Debug log
-  
-    if (source === "plan" && dateKey) {
-      addPlanFood(dateKey, section, item);
-    } else {
-      addFood(section, item);
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      return;
     }
-  
-    router.back();
-  };  
+
+    const fetch = async () => {
+      setLoading(true);
+      try {
+        const res = await searchFoods(query.trim());
+        setResults(res);
+      } catch (err) {
+        console.error("Search error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const delayDebounce = setTimeout(fetch, 400);
+    return () => clearTimeout(delayDebounce);
+  }, [query]);
+
+  const handleAddFood = async (foodName: string) => {
+    try {
+      const details = await getNutritionDetails(foodName);
+
+      const meal = {
+        name: details.food_name,
+        servings: details.serving_qty || 1,
+        calories: Math.round(details.nf_calories),
+        macros: {
+          protein: Math.round(details.nf_protein),
+          carbs: Math.round(details.nf_total_carbohydrate),
+          fats: Math.round(details.nf_total_fat),
+        },
+      };
+
+      if (source === "plan" && dateKey) {
+        addPlanFood(dateKey, section, {
+          ...meal,
+          date: new Date().toDateString(),
+          section,
+        });
+      } else {
+        addFood(section, meal);
+      }
+
+      router.back();
+    } catch (err) {
+      console.error("Nutrition detail fetch error:", err);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -115,16 +92,21 @@ export default function SearchFoodItem() {
         value={query}
         onChangeText={setQuery}
       />
-      <FlatList
-        data={results}
-        keyExtractor={(_, i) => i.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.item} onPress={() => onAdd(item)}>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.cal}>{item.calories} kcal</Text>
-          </TouchableOpacity>
-        )}
-      />
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 20 }} />
+      ) : (
+        <FlatList
+          data={results}
+          keyExtractor={(item, i) => item.food_name + i}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.item} onPress={() => handleAddFood(item.food_name)}>
+              <Text style={styles.name}>{item.food_name}</Text>
+              <Text style={styles.cal}>Tap to add</Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </View>
   );
 }

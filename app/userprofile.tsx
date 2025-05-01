@@ -1,4 +1,4 @@
-// app/userprofile.tsx
+// app/userProfile.tsx
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -17,6 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/config/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Stack } from 'expo-router';
+import { addWeightEntry } from '@/services/firestore'; // ✅ added
 
 export default function UserProfile() {
   const { user } = useAuth();
@@ -56,6 +57,12 @@ export default function UserProfile() {
         goalWeight: parseFloat(goalWeightInput),
         calIntakeGoal: parseInt(calGoalInput),
       });
+
+      // ✅ Also store in the weights subcollection
+      if (weightInput) {
+        await addWeightEntry(user.uid, parseFloat(weightInput));
+      }
+
       setEditVisible(false);
       fetchProfile(); // refresh view
     } catch (err) {
@@ -114,7 +121,7 @@ export default function UserProfile() {
             <TouchableOpacity
               style={styles.editButton}
               onPress={() => {
-                setWeightInput(''); // Not prefilled
+                setWeightInput(''); // leave blank
                 setGoalWeightInput(profile?.goalWeight?.toString() || '');
                 setCalGoalInput(profile?.calIntakeGoal?.toString() || '');
                 setEditVisible(true);

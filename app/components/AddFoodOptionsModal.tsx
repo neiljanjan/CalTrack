@@ -16,7 +16,7 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   section: Section;
-  dateKey?: string; // ← new
+  dateKey?: string;
 };
 
 const AddFoodOptionsModal: React.FC<Props> = ({
@@ -46,7 +46,6 @@ const AddFoodOptionsModal: React.FC<Props> = ({
     }
     router.push(`/${path}?${qs}`);
   };
-  
 
   return (
     <Modal transparent visible={visible} animationType="none">
@@ -114,4 +113,5 @@ const styles = StyleSheet.create({
   close: { marginTop: 15, alignSelf: "center" },
   closeText: { color: "#007AFF", fontSize: 16 },
 });
+
 export default AddFoodOptionsModal;

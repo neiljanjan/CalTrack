@@ -8,6 +8,7 @@ import {
   Text,
   StyleSheet,
   Animated,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Section } from "@/context/MealsContext";
@@ -36,7 +37,7 @@ const AddFoodOptionsModal: React.FC<Props> = ({
     }).start();
   }, [visible]);
 
-  const go = (path: "barcodeScanner" | "searchFoodItem") => {
+  const goToSearch = () => {
     onClose();
     let qs = `section=${section}`;
     if (dateKey) {
@@ -44,7 +45,14 @@ const AddFoodOptionsModal: React.FC<Props> = ({
     } else {
       qs += `&source=log`;
     }
-    router.push(`/${path}?${qs}`);
+    router.push(`/searchFoodItem?${qs}`);
+  };
+
+  const handleBarcodeUnavailable = () => {
+    Alert.alert(
+      "Barcode Scanner Unavailable",
+      "Barcode scanning is not supported in Expo Go. Please use the search option instead."
+    );
   };
 
   return (
@@ -60,15 +68,12 @@ const AddFoodOptionsModal: React.FC<Props> = ({
           <Text style={styles.header}>Add Food to {section}</Text>
           <View style={styles.row}>
             <TouchableOpacity
-              style={styles.btn}
-              onPress={() => go("barcodeScanner")}
+              style={[styles.btn, { backgroundColor: "#ccc" }]}
+              onPress={handleBarcodeUnavailable}
             >
               <Text style={styles.btnText}>Scan Barcode</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.btn}
-              onPress={() => go("searchFoodItem")}
-            >
+            <TouchableOpacity style={styles.btn} onPress={goToSearch}>
               <Text style={styles.btnText}>Search Item</Text>
             </TouchableOpacity>
           </View>

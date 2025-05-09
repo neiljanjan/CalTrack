@@ -177,7 +177,7 @@ export default function MealPlanPage() {
             ))}
           </View>
         </View>
-
+                
         {/* Meals Section */}
         {isLoading ? (
           <Text style={{ textAlign: "center", marginTop: 20 }}>
@@ -202,7 +202,9 @@ export default function MealPlanPage() {
                     <Text style={styles.mealName}>{meal.name}</Text>
                     <Text style={styles.mealDetails}>
                       {meal.servings}× • {meal.calories} kcal
+                      {meal.macros ? ` • ${meal.macros.protein} Proteins • ${meal.macros.carbs} Carbs • ${meal.macros.fats} Fats` : ""}
                     </Text>
+
                   </View>
                 </View>
               ))}

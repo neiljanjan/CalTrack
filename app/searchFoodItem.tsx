@@ -15,6 +15,11 @@ import { useMeals, Section } from "../context/MealsContext";
 import { usePlan } from "@/context/PlanContext";
 import { searchFoods, getNutritionDetails } from "@/lib/nutritionix";
 
+type FoodItem = {
+  food_name: string;
+  calories?: number;
+};
+
 export default function SearchFoodItem() {
   const { section, dateKey, source } = useLocalSearchParams<{
     section: Section;
@@ -26,20 +31,33 @@ export default function SearchFoodItem() {
   const { addPlanFood } = usePlan();
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<{ food_name: string }[]>([]);
+  const [results, setResults] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
-
     const fetch = async () => {
       setLoading(true);
       try {
-        const res = await searchFoods(query.trim());
-        setResults(res);
+        const rawResults = await searchFoods(query.trim() || "apple");
+        const sorted = rawResults
+          .sort((a, b) => a.food_name.localeCompare(b.food_name))
+          .slice(0, 10); // limit to top 10
+
+        const enriched: FoodItem[] = await Promise.all(
+          sorted.map(async (item) => {
+            try {
+              const details = await getNutritionDetails(item.food_name);
+              return {
+                food_name: item.food_name,
+                calories: Math.round(details.nf_calories),
+              };
+            } catch {
+              return { food_name: item.food_name };
+            }
+          })
+        );
+
+        setResults(enriched);
       } catch (err) {
         console.error("Search error:", err);
       } finally {
@@ -100,8 +118,16 @@ export default function SearchFoodItem() {
           data={results}
           keyExtractor={(item, i) => item.food_name + i}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.item} onPress={() => handleAddFood(item.food_name)}>
-              <Text style={styles.name}>{item.food_name}</Text>
+            <TouchableOpacity
+              style={styles.item}
+              onPress={() => handleAddFood(item.food_name)}
+            >
+              <View>
+                <Text style={styles.name}>{item.food_name}</Text>
+                {item.calories !== undefined && (
+                  <Text style={styles.subtext}>{item.calories} kcal</Text>
+                )}
+              </View>
               <Text style={styles.cal}>Tap to add</Text>
             </TouchableOpacity>
           )}
@@ -124,10 +150,12 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 12,
+    alignItems: "center",
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderColor: "#eee",
   },
   name: { fontSize: 16 },
+  subtext: { fontSize: 12, color: "#777" },
   cal: { fontSize: 14, color: "#666" },
 });

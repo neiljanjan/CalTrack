@@ -170,7 +170,9 @@ export default function HomePage() {
                 <Text style={styles.mealName}>{m.name}</Text>
                 <Text style={styles.mealDetails}>
                   {m.servings}× • {m.calories} kcal
+                  {m.macros ? ` • ${m.macros.protein} Proteins • ${m.macros.carbs} Carbs • ${m.macros.fats} Fats` : ""}
                 </Text>
+
               </View>
             </View>
           ))}

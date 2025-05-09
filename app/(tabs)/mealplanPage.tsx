@@ -201,9 +201,13 @@ export default function MealPlanPage() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.mealName}>{meal.name}</Text>
                     <Text style={styles.mealDetails}>
-                      {meal.servings}× • {meal.calories} kcal
-                      {meal.macros ? ` • ${meal.macros.protein} Proteins • ${meal.macros.carbs} Carbs • ${meal.macros.fats} Fats` : ""}
+                      {meal.servings > 1 ? `${meal.servings}× • ` : ""}
+                      {meal.calories} kcal
+                      {meal.macros
+                        ? ` • ${meal.macros.protein} Proteins ${meal.macros.carbs} Carbs ${meal.macros.fats} Fats`
+                        : ""}
                     </Text>
+
 
                   </View>
                 </View>

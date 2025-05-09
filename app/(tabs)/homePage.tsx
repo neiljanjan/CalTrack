@@ -169,9 +169,13 @@ export default function HomePage() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.mealName}>{m.name}</Text>
                 <Text style={styles.mealDetails}>
-                  {m.servings}× • {m.calories} kcal
-                  {m.macros ? ` • ${m.macros.protein} Proteins • ${m.macros.carbs} Carbs • ${m.macros.fats} Fats` : ""}
+                  {m.servings > 1 ? `${m.servings}× • ` : ""}
+                  {m.calories} kcal
+                  {m.macros
+                    ? ` • ${m.macros.protein} Proteins ${m.macros.carbs} Carbs ${m.macros.fats} Fats`
+                    : ""}
                 </Text>
+
 
               </View>
             </View>

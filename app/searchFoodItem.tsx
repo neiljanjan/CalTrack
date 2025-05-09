@@ -14,6 +14,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMeals, Section } from "../context/MealsContext";
 import { usePlan } from "@/context/PlanContext";
 import { searchFoods, getNutritionDetails } from "@/lib/nutritionix";
+import SetServingsModal from "./components/SetServingsModal"; 
 
 type FoodItem = {
   food_name: string;
@@ -34,6 +35,9 @@ export default function SearchFoodItem() {
   const [results, setResults] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedFood, setSelectedFood] = useState<string | null>(null);
+
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
@@ -41,7 +45,7 @@ export default function SearchFoodItem() {
         const rawResults = await searchFoods(query.trim() || "apple");
         const sorted = rawResults
           .sort((a, b) => a.food_name.localeCompare(b.food_name))
-          .slice(0, 10); // limit to top 10
+          .slice(0, 10);
 
         const enriched: FoodItem[] = await Promise.all(
           sorted.map(async (item) => {
@@ -69,18 +73,25 @@ export default function SearchFoodItem() {
     return () => clearTimeout(delayDebounce);
   }, [query]);
 
-  const handleAddFood = async (foodName: string) => {
+  const handleSelectFood = (foodName: string) => {
+    setSelectedFood(foodName);
+    setModalVisible(true);
+  };
+
+  const handleConfirmServings = async (servings: number) => {
+    if (!selectedFood) return;
+
     try {
-      const details = await getNutritionDetails(foodName);
+      const details = await getNutritionDetails(selectedFood);
 
       const meal = {
         name: details.food_name,
-        servings: details.serving_qty || 1,
-        calories: Math.round(details.nf_calories),
+        servings,
+        calories: Math.round(details.nf_calories * servings),
         macros: {
-          protein: Math.round(details.nf_protein),
-          carbs: Math.round(details.nf_total_carbohydrate),
-          fats: Math.round(details.nf_total_fat),
+          protein: Math.round(details.nf_protein * servings),
+          carbs: Math.round(details.nf_total_carbohydrate * servings),
+          fats: Math.round(details.nf_total_fat * servings),
         },
       };
 
@@ -94,6 +105,8 @@ export default function SearchFoodItem() {
         addFood(section, meal);
       }
 
+      setModalVisible(false);
+      setSelectedFood(null);
       router.back();
     } catch (err) {
       console.error("Nutrition detail fetch error:", err);
@@ -120,7 +133,7 @@ export default function SearchFoodItem() {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.item}
-              onPress={() => handleAddFood(item.food_name)}
+              onPress={() => handleSelectFood(item.food_name)}
             >
               <View>
                 <Text style={styles.name}>{item.food_name}</Text>
@@ -133,6 +146,16 @@ export default function SearchFoodItem() {
           )}
         />
       )}
+
+      <SetServingsModal
+        visible={modalVisible}
+        foodName={selectedFood || ""}
+        onClose={() => {
+          setModalVisible(false);
+          setSelectedFood(null);
+        }}
+        onConfirm={handleConfirmServings}
+      />
     </View>
   );
 }

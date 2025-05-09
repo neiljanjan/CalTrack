@@ -11,6 +11,7 @@ export type PlanData = Record<string, MealsByType>;
 interface PlanContextType {
   planData: PlanData;
   addPlanFood: (dateKey: string, section: Section, item: Meal) => void;
+  deletePlanFood: (dateKey: string, section: Section, index: number) => void;
   loadPlanForDate: (uid: string, dateKey: string) => Promise<void>;
   loadingDates: Set<string>;
 }
@@ -25,6 +26,7 @@ const defaultMeals: MealsByType = {
 const PlanContext = createContext<PlanContextType>({
   planData: {},
   addPlanFood: () => {},
+  deletePlanFood: () => {},
   loadPlanForDate: async () => {},
   loadingDates: new Set(),
 });
@@ -32,6 +34,7 @@ const PlanContext = createContext<PlanContextType>({
 export const PlanProvider = ({ children }: { children: ReactNode }) => {
   const [planData, setPlanData] = useState<PlanData>({});
   const [loadingDates, setLoadingDates] = useState<Set<string>>(new Set());
+  const userUid = auth.currentUser?.uid || "";
 
   const addPlanFood = (dateKey: string, section: Section, item: Meal) => {
     setPlanData((prev) => {
@@ -41,7 +44,6 @@ export const PlanProvider = ({ children }: { children: ReactNode }) => {
         [section]: [...dayMeals[section], item],
       };
 
-      // 🔥 Save updated day meals to Firestore!
       if (userUid) {
         saveMealPlan(userUid, dateKey, section, updatedDay[section]);
       }
@@ -53,18 +55,35 @@ export const PlanProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  // To get user id when adding (import auth)
-  const userUid = auth.currentUser?.uid || "";
+  const deletePlanFood = (dateKey: string, section: Section, index: number) => {
+    setPlanData((prev) => {
+      const currentDay = prev[dateKey] ?? { ...defaultMeals };
+      const updatedSectionMeals = [...currentDay[section]];
+      updatedSectionMeals.splice(index, 1);
+
+      const updatedDay = {
+        ...currentDay,
+        [section]: updatedSectionMeals,
+      };
+
+      const updatedPlanData = {
+        ...prev,
+        [dateKey]: updatedDay,
+      };
+
+      if (userUid) {
+        saveMealPlan(userUid, dateKey, section, updatedSectionMeals);
+      }
+
+      return updatedPlanData;
+    });
+  };
 
   const loadPlanForDate = async (uid: string, dateKey: string) => {
-    if (!uid) return;
-    if (loadingDates.has(dateKey)) return;
+    if (!uid || loadingDates.has(dateKey)) return;
 
     setLoadingDates((prev) => new Set(prev).add(dateKey));
-
-    console.log("📦 Loading meal plan for:", uid, dateKey);
     const plan = await getPlanForDate(uid, dateKey);
-    console.log("🧾 Retrieved plan from Firestore:", plan);
 
     if (plan) {
       setPlanData((prev) => ({
@@ -76,8 +95,6 @@ export const PlanProvider = ({ children }: { children: ReactNode }) => {
           Snacks: plan.Snacks ?? [],
         },
       }));
-    } else {
-      console.log("🚫 No data found for", dateKey);
     }
 
     setLoadingDates((prev) => {
@@ -88,7 +105,9 @@ export const PlanProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <PlanContext.Provider value={{ planData, addPlanFood, loadPlanForDate, loadingDates }}>
+    <PlanContext.Provider
+      value={{ planData, addPlanFood, deletePlanFood, loadPlanForDate, loadingDates }}
+    >
       {children}
     </PlanContext.Provider>
   );

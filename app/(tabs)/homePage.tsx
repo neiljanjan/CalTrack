@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CircularProgress from 'react-native-circular-progress-indicator';
@@ -24,13 +25,30 @@ const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] as const;
 
 export default function HomePage() {
   const insets = useSafeAreaInsets();
-  const { mealsByType } = useMeals();
+  const { mealsByType, deleteFood } = useMeals();
 
   const allMeals = Object.values(mealsByType).flat();
   const consumed = allMeals.reduce((sum, m) => sum + m.calories, 0);
   const burned = 0;
   const net = consumed - burned;
   const goal = 2000;
+
+  const handleDelete = async (id: string) => {
+    Alert.alert("Delete Meal", "Are you sure you want to remove this meal?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteFood(id);
+          } catch (err) {
+            console.error("Failed to delete meal:", err);
+          }
+        },
+      },
+    ]);
+  };
 
   const macroTotals = allMeals.reduce(
     (acc, m) => {
@@ -175,9 +193,12 @@ export default function HomePage() {
                     ? ` • ${m.macros.protein} Proteins ${m.macros.carbs} Carbs ${m.macros.fats} Fats`
                     : ""}
                 </Text>
-
-
               </View>
+              {!!m.id && (
+                <TouchableOpacity onPress={() => handleDelete(m.id as string)}>
+                  <Ionicons name="trash-outline" size={20} color="red" />
+                </TouchableOpacity>
+              )}
             </View>
           ))}
           <View style={styles.addSection}>

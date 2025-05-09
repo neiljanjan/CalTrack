@@ -16,6 +16,7 @@ import {
   DocumentData,
   Unsubscribe,
   updateDoc,
+  deleteDoc,
 } from 'firebase/firestore';
 
 export async function createUserProfile(
@@ -110,7 +111,6 @@ export async function getMealStatsByDateRange(
   return grouped;
 }
 
-// ✅ UPDATED: Fetch weight history BETWEEN DATES
 export async function getWeightEntries(
   uid: string,
   start: Date,
@@ -151,4 +151,9 @@ export async function addWeightEntry(uid: string, weight: number) {
   ];
 
   await updateDoc(ref, { weightHistory: updated });
+}
+
+export async function deleteMealEntry(uid: string, mealId: string) {
+  const mealRef = doc(db, 'users', uid, 'meals', mealId);
+  await deleteDoc(mealRef);
 }

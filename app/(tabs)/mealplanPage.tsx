@@ -10,6 +10,7 @@ import {
   Modal,
   Platform,
   Dimensions,
+  Alert,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CircularProgress from "react-native-circular-progress-indicator";
@@ -19,7 +20,7 @@ import SettingsModal from "../components/SettingsModal";
 import NotificationsModal from "../components/NotificationsModal";
 import { useAuth } from "@/context/AuthContext";
 import { usePlan } from "@/context/PlanContext";
-import { Section } from "@/context/MealsContext";
+import { Section, Meal } from "@/context/MealsContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { saveMealPlan } from "@/services/firestore";
@@ -29,7 +30,13 @@ const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snacks"] as const;
 
 export default function MealPlanPage() {
   const { user } = useAuth();
-  const { planData, addPlanFood, loadPlanForDate, loadingDates } = usePlan();
+  const {
+    planData,
+    addPlanFood,
+    deletePlanFood,
+    loadPlanForDate,
+    loadingDates,
+  } = usePlan();
   const insets = useSafeAreaInsets();
 
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -72,14 +79,14 @@ export default function MealPlanPage() {
     }
   }, [user, dateKey]);
 
-  const handleAddFood = (section: Section, meal: any) => {
-    if (!user) return;
-    addPlanFood(dateKey, section, meal);
-
-    // After adding locally, immediately save to Firestore
-    saveMealPlan(user.uid, dateKey, section, [
-      ...(safeMeals[section] || []),
-      meal,
+  const handleDelete = (section: Section, index: number) => {
+    Alert.alert("Delete Planned Meal", "Are you sure you want to remove this item?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => deletePlanFood(dateKey, section, index),
+      },
     ]);
   };
 
@@ -177,7 +184,7 @@ export default function MealPlanPage() {
             ))}
           </View>
         </View>
-                
+
         {/* Meals Section */}
         {isLoading ? (
           <Text style={{ textAlign: "center", marginTop: 20 }}>
@@ -207,13 +214,13 @@ export default function MealPlanPage() {
                         ? ` • ${meal.macros.protein} Proteins ${meal.macros.carbs} Carbs ${meal.macros.fats} Fats`
                         : ""}
                     </Text>
-
-
                   </View>
+                  <TouchableOpacity onPress={() => handleDelete(section, i)}>
+                    <Ionicons name="trash-outline" size={20} color="red" />
+                  </TouchableOpacity>
                 </View>
               ))}
 
-              {/* Add Food Button */}
               <View style={styles.addSection}>
                 <TouchableOpacity
                   style={styles.addButton}
@@ -236,19 +243,11 @@ export default function MealPlanPage() {
         />
       )}
 
-      {/* New: Working modals */}
-      <SettingsModal
-        visible={settingsVisible}
-        onClose={() => setSettingsVisible(false)}
-      />
-      <NotificationsModal
-        visible={notificationsVisible}
-        onClose={() => setNotificationsVisible(false)}
-      />
+      <SettingsModal visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
+      <NotificationsModal visible={notificationsVisible} onClose={() => setNotificationsVisible(false)} />
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {

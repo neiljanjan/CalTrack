@@ -2,9 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { addMealEntry, listenToMeals } from '@/services/firestore';
+import { addMealEntry, listenToMeals, deleteMealEntry } from '@/services/firestore';
 
 export type Meal = {
+  id?: string; // 🔥 Added for deletion
   name: string;
   servings: number;
   calories: number;
@@ -13,8 +14,8 @@ export type Meal = {
     carbs: number;
     fats: number;
   };
-  date: string;           // ✅ now required
-  section: Section;       // ✅ also required
+  date: string;
+  section: Section;
 };
 
 export type Section = 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
@@ -23,6 +24,7 @@ type MealsByType = Record<Section, Meal[]>;
 type MealsContextType = {
   mealsByType: MealsByType;
   addFood: (section: Section, item: Omit<Meal, 'date' | 'section'>) => void;
+  deleteFood: (mealId: string) => Promise<void>;
 };
 
 const defaultMeals: MealsByType = {
@@ -35,6 +37,7 @@ const defaultMeals: MealsByType = {
 const MealsContext = createContext<MealsContextType>({
   mealsByType: defaultMeals,
   addFood: () => {},
+  deleteFood: async () => {},
 });
 
 export const MealsProvider = ({ children }: { children: ReactNode }) => {
@@ -59,12 +62,13 @@ export const MealsProvider = ({ children }: { children: ReactNode }) => {
           const section = m.section as Section;
           if (grouped[section]) {
             grouped[section].push({
+              id: m.id, // 🔥 Important for deletion
               name: m.name,
               servings: m.servings,
               calories: m.calories,
               macros: m.macros,
               date: m.date,
-              section: section,
+              section,
             });
           }
         }
@@ -90,8 +94,13 @@ export const MealsProvider = ({ children }: { children: ReactNode }) => {
     await addMealEntry(user.uid, mealWithMeta);
   };
 
+  const deleteFood = async (mealId: string) => {
+    if (!user) return;
+    await deleteMealEntry(user.uid, mealId);
+  };
+
   return (
-    <MealsContext.Provider value={{ mealsByType, addFood }}>
+    <MealsContext.Provider value={{ mealsByType, addFood, deleteFood }}>
       {children}
     </MealsContext.Provider>
   );

@@ -17,7 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/config/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Stack } from 'expo-router';
-import { addWeightEntry } from '@/services/firestore'; // ✅ added
+import { addWeightEntry } from '@/services/firestore';
 
 export default function UserProfile() {
   const { user } = useAuth();
@@ -52,15 +52,32 @@ export default function UserProfile() {
     if (!user) return;
     try {
       const ref = doc(db, 'users', user.uid);
-      await updateDoc(ref, {
-        weight: parseFloat(weightInput),
-        goalWeight: parseFloat(goalWeightInput),
-        calIntakeGoal: parseInt(calGoalInput),
-      });
+      const updates: any = {};
 
-      // ✅ Also store in the weights subcollection
       if (weightInput) {
-        await addWeightEntry(user.uid, parseFloat(weightInput));
+        const weight = parseFloat(weightInput);
+        if (!isNaN(weight)) {
+          updates.weight = weight;
+          await addWeightEntry(user.uid, weight);
+        }
+      }
+
+      if (goalWeightInput) {
+        const goalWeight = parseFloat(goalWeightInput);
+        if (!isNaN(goalWeight)) {
+          updates.goalWeight = goalWeight;
+        }
+      }
+
+      if (calGoalInput) {
+        const calGoal = parseInt(calGoalInput);
+        if (!isNaN(calGoal)) {
+          updates.calIntakeGoal = calGoal;
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(ref, updates);
       }
 
       setEditVisible(false);
@@ -121,9 +138,9 @@ export default function UserProfile() {
             <TouchableOpacity
               style={styles.editButton}
               onPress={() => {
-                setWeightInput(''); // leave blank
-                setGoalWeightInput(profile?.goalWeight?.toString() || '');
-                setCalGoalInput(profile?.calIntakeGoal?.toString() || '');
+                setWeightInput('');
+                setGoalWeightInput('');
+                setCalGoalInput('');
                 setEditVisible(true);
               }}
             >

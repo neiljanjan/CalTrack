@@ -1,4 +1,5 @@
 // app/components/SettingsModal.tsx
+
 import React, { useEffect, useRef } from 'react';
 import {
   Modal,
@@ -8,6 +9,7 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -32,7 +34,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }) => {
 
   const handleSignOut = () => {
     onClose();
+    // TODO: integrate with auth context (this is just placeholder for now)
     router.replace('/loginPage');
+  };
+
+  const handleOption = (option: string) => {
+    Alert.alert(option, `${option} settings will go here.`);
   };
 
   return (
@@ -43,16 +50,38 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }) => {
           { transform: [{ scale: scaleAnim }] }
         ]}>
           <Text style={styles.header}>Settings</Text>
-          {['Account','Notifications','Privacy','Help & Support','About'].map(opt => (
-            <TouchableOpacity key={opt} style={styles.option} onPress={() => console.log(opt)}>
-              <Text style={styles.optionText}>{opt}</Text>
-            </TouchableOpacity>
-          ))}
 
+          {/* Settings Options */}
+          <TouchableOpacity style={styles.option} onPress={() => handleOption('Edit Profile')}>
+            <Text style={styles.optionText}>Edit Profile</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.option} onPress={() => handleOption('Units')}>
+            <Text style={styles.optionText}>Units</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.option} onPress={() => handleOption('Notifications')}>
+            <Text style={styles.optionText}>Notifications</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.option} onPress={() => handleOption('Privacy')}>
+            <Text style={styles.optionText}>Privacy (Delete Account)</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.option} onPress={() => handleOption('Help & Support')}>
+            <Text style={styles.optionText}>Help & Support</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.option} onPress={() => handleOption('About')}>
+            <Text style={styles.optionText}>About</Text>
+          </TouchableOpacity>
+
+          {/* Sign Out */}
           <TouchableOpacity style={[styles.option, styles.signOut]} onPress={handleSignOut}>
             <Text style={[styles.optionText, styles.signOutText]}>Sign Out</Text>
           </TouchableOpacity>
 
+          {/* Close button */}
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
             <Text style={styles.closeTxt}>Close</Text>
           </TouchableOpacity>

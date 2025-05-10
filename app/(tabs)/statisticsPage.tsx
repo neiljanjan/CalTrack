@@ -1,4 +1,4 @@
-// app/(tabs)/statisticspage.tsx
+// app/(tabs)/statisticsPage.tsx
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -19,13 +19,15 @@ import Header from '../components/Header';
 import { useAuth } from '@/context/AuthContext';
 import { getMealStatsByDateRange, getWeightEntries } from '@/services/firestore';
 import { Meal } from '@/context/MealsContext';
+import { db } from '@/config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const screenWidth = Dimensions.get('window').width;
 
 const Statisticspage = () => {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const [timePeriod, setTimePeriod] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
+  const [timePeriod, setTimePeriod] = useState<'7days' | '30days' | '12months'>('7days');
 
   const [caloriesData, setCaloriesData] = useState<number[]>([]);
   const [labels, setLabels] = useState<string[]>([]);
@@ -38,17 +40,24 @@ const Statisticspage = () => {
     let start: Date;
     let labelSet: string[] = [];
 
-    if (timePeriod === 'weekly') {
+    if (timePeriod === '7days') {
+      // ✅ Monday start
       start = new Date(now);
-      start.setDate(start.getDate() - 6);
-      labelSet = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    } else if (timePeriod === 'monthly') {
-      start = new Date(now);
-      start.setDate(start.getDate() - 27);
-      labelSet = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+      const today = now.getDay() === 0 ? 7 : now.getDay();
+      start.setDate(now.getDate() - today + 1);
+      labelSet = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date(start);
+        date.setDate(start.getDate() + i);
+        return date.toLocaleDateString('en-GB', { weekday: 'short' });
+      });
+    } else if (timePeriod === '30days') {
+      // ✅ Current calendar month
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      labelSet = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString());
     } else {
-      start = new Date(now);
-      start.setFullYear(start.getFullYear() - 1);
+      // ✅ Current year
+      start = new Date(now.getFullYear(), 0, 1);
       labelSet = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     }
 
@@ -65,13 +74,20 @@ const Statisticspage = () => {
 
     const bucketIndex = (date: string): number => {
       const dt = new Date(date);
-      if (timePeriod === 'weekly') return dt.getDay();
-      if (timePeriod === 'monthly') return Math.floor((dt.getDate() - 1) / 7);
-      return dt.getMonth();
+      if (timePeriod === '7days') {
+        const monday = new Date(start);
+        const diff = Math.floor((dt.getTime() - monday.getTime()) / (1000 * 60 * 60 * 24));
+        return diff >= 0 && diff < 7 ? diff : -1;
+      }
+      if (timePeriod === '30days') {
+        return dt.getMonth() === start.getMonth() ? dt.getDate() - 1 : -1;
+      }
+      return dt.getFullYear() === start.getFullYear() ? dt.getMonth() : -1;
     };
 
     Object.entries(grouped).forEach(([dateStr, meals]) => {
       const idx = bucketIndex(dateStr);
+      if (idx === -1) return;
       meals.forEach((meal: Meal) => {
         calBuckets[idx] += meal.calories;
         if (meal.macros) {
@@ -86,19 +102,44 @@ const Statisticspage = () => {
     setCaloriesData(calBuckets);
     setMacroData(labelSet.map((_, i) => [proteinBuckets[i], carbBuckets[i], fatBuckets[i]]));
 
+    // ✅ Patch for weight data by actual date
     const weightEntries = await getWeightEntries(user!.uid, start, end);
+    if (timePeriod === '30days') {
+      const daysInMonth = labelSet.length;
+      const weightsArray: number[] = new Array(daysInMonth).fill(0);
 
-    const validWeights = weightEntries
-      .map((w) => w.weight)
-      .filter((w) => typeof w === 'number' && isFinite(w) && !isNaN(w));
+      // Fill known weights
+      weightEntries.forEach((entry) => {
+        if (entry.date && entry.weight) {
+          const [year, month, day] = entry.date.split('-').map(Number);
+          const date = new Date(year, month - 1, day);
+          if (
+            date.getFullYear() === start.getFullYear() &&
+            date.getMonth() === start.getMonth()
+          ) {
+            const dayIndex = date.getDate() - 1;
+            weightsArray[dayIndex] = entry.weight;
+          }
+        }
+      });
 
-    console.log("📊 Weight entries:", weightEntries);
-    console.log("✅ Valid weights:", validWeights);
+      // Carry forward last known weight
+      let lastKnown = weightsArray[0];
+      for (let i = 1; i < weightsArray.length; i++) {
+        if (weightsArray[i] === 0) {
+          weightsArray[i] = lastKnown;
+        } else {
+          lastKnown = weightsArray[i];
+        }
+      }
 
-    setWeightData(validWeights);
+      setWeightData(weightsArray);
+    }
+
+
   };
 
-  const avgCalories = caloriesData.length
+    const avgCalories = caloriesData.length
     ? Math.round(caloriesData.reduce((a, b) => a + b, 0) / caloriesData.length)
     : 0;
 
@@ -113,6 +154,8 @@ const Statisticspage = () => {
     labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
     formatYLabel: (val: string) => val.split('.')[0],
   };
+
+  const showWeightGraph = timePeriod !== '7days';
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -129,7 +172,7 @@ const Statisticspage = () => {
 
         {/* Segmented Control */}
         <View style={styles.segmentedControlContainer}>
-          {(['weekly', 'monthly', 'yearly'] as const).map((period) => (
+          {(['7days', '30days', '12months'] as const).map((period) => (
             <TouchableOpacity
               key={period}
               style={[
@@ -144,7 +187,11 @@ const Statisticspage = () => {
                   timePeriod === period && styles.segmentButtonTextActive,
                 ]}
               >
-                {period.charAt(0).toUpperCase() + period.slice(1)}
+                {period === '7days'
+                  ? '7 Days'
+                  : period === '30days'
+                  ? 'This Month'
+                  : 'This Year'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -153,8 +200,10 @@ const Statisticspage = () => {
         {/* Calories */}
         <View style={styles.sectionCard}>
           <Text style={styles.chartTitle}>Calories Consumed</Text>
-          {caloriesData.every(c => c === 0) ? (
-            <Text style={styles.noDataText}>No data available</Text>
+          {caloriesData.every((c) => c === 0) ? (
+            <Text style={styles.noDataText}>
+              No calorie data yet. Add meals to track your calories!
+            </Text>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={{ marginLeft: 40 }}>
@@ -180,15 +229,21 @@ const Statisticspage = () => {
         {/* Weight */}
         <View style={styles.sectionCard}>
           <Text style={styles.chartTitle}>Weight Over Time</Text>
-          {weightData.length === 0 ? (
-            <Text style={styles.noDataText}>No weight data</Text>
+          {!showWeightGraph ? (
+            <Text style={styles.noDataText}>
+              Weight graph only available in This Month or This Year view.
+            </Text>
+          ) : weightData.length === 0 ? (
+            <Text style={styles.noDataText}>
+              No weight data yet. Add your weight from the profile page.
+            </Text>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={{ marginLeft: 40 }}>
                 <LineChart
                   data={{
-                    labels: labels.slice(0, weightData.length),
-                    datasets: [{ data: weightData }],
+                    labels,
+                    datasets: [{ data: weightData as number[] }]
                   }}
                   width={Math.max(screenWidth * 0.85, weightData.length * 50)}
                   height={220}
@@ -228,7 +283,12 @@ const Statisticspage = () => {
           <View style={styles.customLegend}>
             {macroLegend.map((label, idx) => (
               <View key={idx} style={styles.legendItem}>
-                <View style={[styles.legendColor, { backgroundColor: macroColors[idx] }]} />
+                <View
+                  style={[
+                    styles.legendColor,
+                    { backgroundColor: macroColors[idx] },
+                  ]}
+                />
                 <Text style={styles.legendLabel}>{label}</Text>
               </View>
             ))}
@@ -305,6 +365,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     marginVertical: 10,
+    textAlign: 'center',
   },
 });
 

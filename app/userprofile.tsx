@@ -11,16 +11,18 @@ import {
   TouchableOpacity,
   TextInput,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/config/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { addWeightEntry } from '@/services/firestore';
 
 export default function UserProfile() {
   const { user } = useAuth();
+  const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editVisible, setEditVisible] = useState(false);
@@ -81,14 +83,20 @@ export default function UserProfile() {
       }
 
       setEditVisible(false);
-      fetchProfile(); // refresh view
+      fetchProfile();
     } catch (err) {
       console.error('Failed to update profile:', err);
     }
   };
 
+  const handleSignOut = () => {
+    router.replace('/loginPage');
+  };
+
+
   const data = {
     name: user?.displayName ?? profile?.name ?? 'User',
+    email: user?.email ?? '-',
     age: profile?.age ?? '-',
     height: profile?.height ? `${profile.height} cm` : '-',
     weight: profile?.weight ? `${profile.weight} kg` : '-',
@@ -123,6 +131,7 @@ export default function UserProfile() {
           <View style={styles.infoBox}>
             <Text style={styles.boxHeader}>Basic Information</Text>
             <Text style={styles.infoText}>Name: {data.name}</Text>
+            <Text style={styles.infoText}>Email: {data.email}</Text>
             <Text style={styles.infoText}>Age: {data.age}</Text>
             <Text style={styles.infoText}>Height: {data.height}</Text>
             <Text style={styles.infoText}>Weight: {data.weight}</Text>
@@ -145,6 +154,12 @@ export default function UserProfile() {
               }}
             >
               <Text style={styles.editButtonText}>Edit Goals</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.infoBox}>
+            <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+              <Text style={styles.signOutButtonText}>Sign Out</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -196,35 +211,21 @@ export default function UserProfile() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  safeArea: { flex: 1, backgroundColor: '#fff' },
   scrollContent: {
     padding: 20,
     minHeight: Dimensions.get('window').height,
     backgroundColor: '#fff',
   },
-  profilePic: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
+  profilePic: { alignItems: 'center', marginBottom: 20 },
   infoBox: {
     backgroundColor: '#f9f9f9',
     padding: 15,
     borderRadius: 10,
     marginBottom: 20,
   },
-  boxHeader: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 10,
-  },
-  infoText: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 5,
-  },
+  boxHeader: { fontSize: 18, fontWeight: '600', marginBottom: 10 },
+  infoText: { fontSize: 16, color: '#333', marginBottom: 5 },
   editButton: {
     marginTop: 10,
     backgroundColor: '#007AFF',
@@ -232,10 +233,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
-  editButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  editButtonText: { color: '#fff', fontWeight: 'bold' },
+  signOutButton: {
+    backgroundColor: '#fdecea',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
   },
+  signOutButtonText: { color: '#b71c1c', fontWeight: 'bold' },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -263,9 +268,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: '#000',
   },
-  modalActions: {
-    alignItems: 'center',
-  },
+  modalActions: { alignItems: 'center' },
   saveBtn: {
     backgroundColor: '#007AFF',
     paddingVertical: 10,
@@ -273,12 +276,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
   },
-  saveBtnText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  cancelText: {
-    color: '#007AFF',
-    fontSize: 16,
-  },
+  saveBtnText: { color: '#fff', fontSize: 16 },
+  cancelText: { color: '#007AFF', fontSize: 16 },
 });

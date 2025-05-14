@@ -96,9 +96,9 @@ export default function MealPlanPage() {
         contentContainerStyle={[
           styles.container,
           {
-            paddingBottom: insets.bottom + 50,
             paddingTop: insets.top + 20,
-            minHeight: screenHeight,
+            paddingBottom: insets.bottom + 50,
+            minHeight: Dimensions.get('window').height,
           },
         ]}
         showsVerticalScrollIndicator={false}

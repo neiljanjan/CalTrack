@@ -162,7 +162,11 @@ const Statisticspage = () => {
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 50 },
+          {
+            paddingTop: insets.top + 20,
+            paddingBottom: insets.bottom + 50,
+            minHeight: Dimensions.get('window').height,
+          },
         ]}
         showsVerticalScrollIndicator={false}
       >

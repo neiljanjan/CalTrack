@@ -1,6 +1,6 @@
 // app/components/SettingsModal.tsx
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Modal,
   View,
@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import HelpModal from './HelpModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -21,6 +22,7 @@ type SettingsModalProps = {
 };
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }) => {
+  const [helpVisible, setHelpVisible] = useState(false);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
 
@@ -68,9 +70,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }) => {
             <Text style={styles.optionText}>Privacy (Delete Account)</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.option} onPress={() => handleOption('Help & Support')}>
+          <TouchableOpacity style={styles.option} onPress={() => setHelpVisible(true)}>
             <Text style={styles.optionText}>Help & Support</Text>
           </TouchableOpacity>
+
 
           <TouchableOpacity style={styles.option} onPress={() => handleOption('About')}>
             <Text style={styles.optionText}>About</Text>
@@ -87,6 +90,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }) => {
           </TouchableOpacity>
         </Animated.View>
       </TouchableOpacity>
+      <HelpModal visible={helpVisible} onClose={() => setHelpVisible(false)} />
     </Modal>
   );
 };
